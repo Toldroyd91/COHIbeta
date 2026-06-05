@@ -12,58 +12,14 @@
       gtag('js', new Date());
       gtag('config', 'G-0J8DC9GD6Z');
     </script>
-
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            min-height: 100%;
-            background: transparent !important; 
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(135deg, #0F3759 0%, #04111c 100%);
-            z-index: -999;
-        }
-        
-        .btn-danger { background: #8b0000; color: white; border: none; }
-        .canvas-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .tool-btn { 
-            background: #2D2D2D; color: #A0A0A0; border: 1px solid #444; 
-            padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; 
-            cursor: pointer; display: inline-block; width: auto; 
-            margin-top: 0; height: auto; font-weight: 500;
-            transition: all 0.15s ease; -webkit-tap-highlight-color: transparent;
-        }
-        .tool-btn.active { background: #0D6EFD; color: #fff; border-color: #0D6EFD; font-weight: bold; box-shadow: 0 0 8px rgba(13,110,253,0.4); }
-        .tool-btn.lock-btn { background: #2b1d1d; border-color: #532222; color: #ff6b6b; }
-        .tool-btn.lock-btn.canvas-locked { background: #1c3222; border-color: #22532c; color: #6bff7e; font-weight: bold; }
-        .tool-btn:active { transform: scale(0.96); }
-        .canvas-group.fullscreen-mode {
-            position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important;
-            background: #121212 !important; z-index: 9999999 !important; padding: 20px !important;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;
-        }
-        .canvas-group.fullscreen-mode .canvas-container {
-            flex-grow: 1; display: flex; align-items: center; justify-content: center;
-            max-width: 100%; max-height: calc(100vh - 120px); border: 2px solid #333;
-        }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 999999; backdrop-filter: blur(4px); }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-content h2 { color: #fff; margin-bottom: 20px; font-size: 1.5rem; }
-    </style>
 </head>
 <body>
-    <header class="navbar navbar--top" style="position: relative; padding: 15px;">
-        <div class="navbar__container" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-            <h1 class="navbar__title" style="margin-right: auto;">Survey App</h1>
-            <select id="brandSelect" class="form-group__input form-group__input--touch" style="min-height: 40px; height: 40px; padding: 0 10px; font-size: 0.9rem; width: 200px;">
+    <canvas id="precisionLoupe" width="120" height="120"></canvas>
+
+    <header class="navbar navbar--top" id="mainHeader">
+        <div class="navbar__container">
+            <h1 class="navbar__title">Survey App</h1>
+            <select id="brandSelect" class="form-group__input form-group__input--touch nav-select">
                 <option value="Clearview">Clearview</option>
                 <option value="CO Home Improvements">CO Home Improvements</option>
                 <option value="Orion Windows">Orion Windows</option>
@@ -72,9 +28,9 @@
                 <option value="West Yorkshire Windows">West Yorkshire Windows</option>
                 <option value="Yorkshire Windows">Yorkshire Windows</option>
             </select>
-            <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch" style="min-height: 40px; height: 40px; padding: 0 10px; font-size: 0.9rem; width: 160px;" placeholder="Select Designer...">
+            <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch nav-input" placeholder="Select Designer...">
             <datalist id="designerList"></datalist>
-            <button id="openProfileManagerBtn" class="tool-btn" style="min-height: 40px; height: 40px; margin-top: 0;">⚙️ Profile</button>
+            <button id="openProfileManagerBtn" class="tool-btn nav-btn">⚙️ Profile</button>
         </div>
     </header>
 
@@ -91,64 +47,61 @@
 
         <article class="card card--primary">
             <h2 class="card__title">Elevation Photos</h2>
-            <div class="canvas-group" data-id="frontelevation" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">Front Elevation:</label>
+            <div class="canvas-group" data-id="frontelevation">
+                <label class="form-group__label accent-text">Front Elevation:</label>
                 <input type="file" class="camera-input form-group__input--touch" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-frontelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <div class="tool-section">
+                        <span class="tool-label">Markup</span>
+                        <button type="button" class="tool-btn freehand-btn">✏️ Free</button>
+                        <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
+                        <button type="button" class="tool-btn text-btn">📝 Text</button>
+                    </div>
+                    <div class="tool-section">
+                        <span class="tool-label">Measure</span>
+                        <button type="button" class="tool-btn calibrate-btn measure-color">📏 Set Scale</button>
+                        <button type="button" class="tool-btn line-btn">📏 Line</button>
+                        <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
+                    </div>
+                    <div class="tool-section">
+                        <span class="tool-label">Pins</span>
+                        <button type="button" class="tool-btn pin-1-btn pin-blue">📍 1</button>
+                        <button type="button" class="tool-btn pin-2-btn pin-cyan">📍 2</button>
+                        <button type="button" class="tool-btn pin-3-btn pin-yellow">📍 3</button>
+                    </div>
+                    <div class="tool-section w-100 flex-right">
+                        <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
+                        <button type="button" class="tool-btn maximize-btn">🔍 Max</button>
+                        <button type="button" class="tool-btn clear-btn">🗑️ Clear</button>
+                    </div>
                 </div>
             </div>
-            <div class="canvas-group" data-id="sideelevation" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">Side Elevation: (If Possible)</label>
+
+            <div class="canvas-group" data-id="sideelevation" style="margin-top: 30px;">
+                <label class="form-group__label accent-text">Side Elevation: (If Possible)</label>
                 <input type="file" class="camera-input form-group__input--touch" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-sideelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <div class="tool-section"><span class="tool-label">Markup</span><button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn text-btn">📝 Text</button></div>
+                    <div class="tool-section"><span class="tool-label">Measure</span><button type="button" class="tool-btn calibrate-btn measure-color">📏 Set Scale</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button></div>
+                    <div class="tool-section"><span class="tool-label">Pins</span><button type="button" class="tool-btn pin-1-btn pin-blue">📍 1</button><button type="button" class="tool-btn pin-2-btn pin-cyan">📍 2</button><button type="button" class="tool-btn pin-3-btn pin-yellow">📍 3</button></div>
+                    <div class="tool-section w-100 flex-right"><button type="button" class="tool-btn undo-btn">↩️ Undo</button><button type="button" class="tool-btn maximize-btn">🔍 Max</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button></div>
                 </div>
             </div>
-            <div class="canvas-group" data-id="rearelevation">
-                <label class="form-group__label" style="color: var(--accent);">Rear Elevation:</label>
+
+            <div class="canvas-group" data-id="rearelevation" style="margin-top: 30px;">
+                <label class="form-group__label accent-text">Rear Elevation:</label>
                 <input type="file" class="camera-input form-group__input--touch" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-rearelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <div class="tool-section"><span class="tool-label">Markup</span><button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn text-btn">📝 Text</button></div>
+                    <div class="tool-section"><span class="tool-label">Measure</span><button type="button" class="tool-btn calibrate-btn measure-color">📏 Set Scale</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button></div>
+                    <div class="tool-section"><span class="tool-label">Pins</span><button type="button" class="tool-btn pin-1-btn pin-blue">📍 1</button><button type="button" class="tool-btn pin-2-btn pin-cyan">📍 2</button><button type="button" class="tool-btn pin-3-btn pin-yellow">📍 3</button></div>
+                    <div class="tool-section w-100 flex-right"><button type="button" class="tool-btn undo-btn">↩️ Undo</button><button type="button" class="tool-btn maximize-btn">🔍 Max</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button></div>
                 </div>
             </div>
         </article>
@@ -162,113 +115,60 @@
             <div class="form-group"><label class="form-group__label">DPC Depth (mm):</label><input type="number" id="dpcDepth" class="form-group__input"></div>
             <div class="form-group"><label class="form-group__label">House material:</label><select id="houseMaterial" class="form-group__input"><option value="">Select...</option><option value="Brick">Brick</option><option value="Stone">Stone</option><option value="Render">Render</option><option value="Other">Other</option></select></div>
             <div class="canvas-group" data-id="housematerialphoto" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">Upload house material photo:</label>
+                <label class="form-group__label accent-text">Upload house material photo:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-housematerialphoto" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <div class="tool-section"><span class="tool-label">Markup</span><button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn text-btn">📝 Text</button></div>
+                    <div class="tool-section"><span class="tool-label">Measure</span><button type="button" class="tool-btn calibrate-btn measure-color">📏 Set Scale</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button></div>
+                    <div class="tool-section flex-right w-100"><button type="button" class="tool-btn undo-btn">↩️ Undo</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button></div>
                 </div>
             </div>
 
             <div class="form-group"><label class="form-group__label">Trees within 30m?</label><select id="treesExist" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-            <div class="canvas-group" data-id="treelocations" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">If Yes, upload photo:</label>
+            <div class="canvas-group conditional-field" data-condition="treesExist" data-id="treelocations">
+                <label class="form-group__label accent-text">Tree Upload Photo:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-treelocations" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button>
                 </div>
             </div>
 
             <div class="form-group"><label class="form-group__label">Manholes visible?</label><select id="manholeExist" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-            <div class="canvas-group" data-id="manhole" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">If Yes, upload photo:</label>
+            <div class="canvas-group conditional-field" data-condition="manholeExist" data-id="manhole">
+                <label class="form-group__label accent-text">Manhole Upload Photo:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-manhole" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button>
                 </div>
             </div>
 
             <div class="form-group"><label class="form-group__label">Weep vents visible?</label><select id="weepventsExist" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-            <div class="canvas-group" data-id="weepvents" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">If Yes, upload photo:</label>
+            <div class="canvas-group conditional-field" data-condition="weepventsExist" data-id="weepvents">
+                <label class="form-group__label accent-text">Weep Vents Upload Photo:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-weepvents" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button>
                 </div>
             </div>
 
             <div class="form-group"><label class="form-group__label">Air Bricks? How many?</label><select id="airbricks" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
             <div class="form-group"><label class="form-group__label">Pipes (RWP/SVP) exist?</label><select id="pipesExist" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
 
-            <div class="canvas-group" data-id="rwpsvp" style="margin-bottom: 20px;">
-                <label class="form-group__label" style="color: var(--accent);">If Yes, upload photo:</label>
+            <div class="canvas-group conditional-field" data-condition="pipesExist" data-id="rwpsvp">
+                <label class="form-group__label accent-text">Pipes Upload Photo:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container"><canvas id="canvas-rwpsvp" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn clear-btn">🗑️ Clear</button>
                 </div>
             </div>
 
@@ -295,28 +195,18 @@
             
             <div class="form-group">
                 <label class="form-group__label">Designer Notes:</label>
-                <button type="button" id="dictateBtn" class="tool-btn" style="width: auto; margin-bottom: 10px; background: #e63946; color: white; border-color: #e63946;">🎙️ Dictate Notes</button>
+                <button type="button" id="dictateBtn" class="tool-btn w-auto mb-2" style="background: #e63946; color: white; border-color: #e63946;">🎙️ Dictate Notes</button>
                 <textarea id="designerNotes" class="form-group__input" rows="4" placeholder="Type or dictate your notes here..."></textarea>
             </div>
 
             <div class="canvas-group" data-id="designersketch">
-                <label class="form-group__label" style="color: var(--accent);">Designer Sketches:</label>
+                <label class="form-group__label accent-text">Designer Sketches:</label>
                 <input type="file" class="camera-input form-group__input" accept="image/*">
                 <div class="canvas-container" style="background:#fff;"><canvas id="canvas-designersketch" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
-                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
-                    <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
-                    <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
-                    <button type="button" class="tool-btn line-btn">📏 Line</button>
-                    <button type="button" class="tool-btn dim-line-btn">📐 Dim Line</button>
-                    <button type="button" class="tool-btn text-btn">📝 Text</button>
-                    <button type="button" class="tool-btn pin-1-btn" style="color: #0D6EFD; border-color: #0D6EFD;">📍 Pin 1</button>
-                    <button type="button" class="tool-btn pin-2-btn" style="color: #0dcaf0; border-color: #0dcaf0;">📍 Pin 2</button>
-                    <button type="button" class="tool-btn pin-3-btn" style="color: #ffc107; border-color: #ffc107;">📍 Pin 3</button>
-                    <button type="button" class="tool-btn undo-btn">↩️ Undo</button>
-                    <button type="button" class="tool-btn maximize-btn">🔍 Max Screen</button>
-                    <button type="button" class="tool-btn clear-btn" style="background: #444; color: #fff;">🗑️ Clear Sketch</button>
+                    <button type="button" class="tool-btn lock-btn canvas-locked w-100">🔒 Locked for Scroll</button>
+                    <div class="tool-section"><span class="tool-label">Draw</span><button type="button" class="tool-btn freehand-btn">✏️ Free</button><button type="button" class="tool-btn line-btn">📏 Line</button><button type="button" class="tool-btn text-btn">📝 Text</button></div>
+                    <div class="tool-section flex-right w-100"><button type="button" class="tool-btn undo-btn">↩️ Undo</button><button type="button" class="tool-btn maximize-btn">🔍 Max</button><button type="button" class="tool-btn clear-btn">🗑️ Clear Sketch</button></div>
                 </div>
             </div>
         </article>
@@ -324,14 +214,14 @@
         <article class="card card--primary">
             <h2 class="card__title">Misc</h2>
             <div class="form-group"><label class="form-group__label">Additional Notes:</label><textarea id="miscNotes" class="form-group__input" rows="3"></textarea></div>
-            <div class="form-group"><label class="form-group__label" style="color: var(--accent);">Additional Photos (Upload multiple):</label><input type="file" id="miscPhotos" class="form-group__input" accept="image/*" multiple style="padding-top:13px;"></div>
+            <div class="form-group"><label class="form-group__label accent-text">Additional Photos (Upload multiple):</label><input type="file" id="miscPhotos" class="form-group__input" accept="image/*" multiple style="padding-top:13px;"></div>
         </article>
 
         <div style="display: flex; gap: 15px; margin-top: 34px;">
-            <button id="generateCustomerPdfBtn" class="button" style="background: #2D2D2D; border: 2px solid var(--accent); box-shadow: none; width: 50%;">Customer Checklist PDF</button>
-            <button id="generateInternalPdfBtn" class="button" style="width: 50%;">Full Survey PDF</button>
+            <button id="generateCustomerPdfBtn" class="button btn-outline">Customer Checklist PDF</button>
+            <button id="generateInternalPdfBtn" class="button">Full Survey PDF</button>
         </div>
-        <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
+        <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px;">Clear Form for Next Appointment</button>
     </main>
 
     <div id="pdfTemplateInternal" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
@@ -448,7 +338,7 @@
             <div class="form-group"><label class="form-group__label" style="color: #A0A0A0;">Phone:</label><input type="tel" id="profPhone" class="form-group__input"></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="saveProfileBtn" class="button" style="margin-top: 0; width: 50%;">Save</button>
-                <button id="closeProfileBtn" class="button" style="margin-top: 0; background:#444; width: 50%;">Cancel</button>
+                <button id="closeProfileBtn" class="button btn-outline" style="margin-top: 0; width: 50%;">Cancel</button>
             </div>
         </div>
     </div>
