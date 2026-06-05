@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Engine v6)");
+    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Precision Engine Active)");
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('Service Worker Error', err)); }
 
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', evaluateConditionals));
 
-    // Profile & Autosave
+    // --- PROFILE & AUTOSAVE ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
     const refreshDropdown = () => { const list = document.getElementById('designerList'); if (list) list.innerHTML = Object.keys(window.designerProfiles).map(n => `<option value="${n}">`).join(''); }; refreshDropdown();
 
@@ -29,11 +29,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('resetFormBtn')?.addEventListener('click', () => { if(confirm("Are you sure you want to completely clear the current session?")) { localStorage.removeItem('surveyAppData'); location.reload(); } });
 
-    // Voice
+    // --- VOICE DICTATION ---
     const notesArea = document.getElementById('designerNotes'); const dictateBtn = document.getElementById('dictateBtn');
     if (dictateBtn) { if ('webkitSpeechRecognition' in window) { const rec = new webkitSpeechRecognition(); rec.continuous = true; rec.interimResults = true; rec.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. '; } const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data['designerNotes'] = notesArea.value; localStorage.setItem('surveyAppData', JSON.stringify(data)); }; dictateBtn.onclick = () => { if(rec.running) { rec.stop(); dictateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg> Dictate'; } else { rec.start(); dictateBtn.innerHTML = '🛑 Stop'; } rec.running = !rec.running; }; } else { dictateBtn.style.display = 'none'; } }
 
-    // Fabric Canvas Engine
+    // --- FABRIC CANVAS & FLAWLESS LOUPE ENGINE ---
     const loupeEl = document.getElementById('precisionLoupe'); const lCtx = loupeEl.getContext('2d'); window.appCanvases = {};
     
     document.querySelectorAll('.canvas-group').forEach(group => {
@@ -50,42 +50,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const lockBtn = group.querySelector('.lock-btn'); const calibrateBtn = group.querySelector('.calibrate-btn'); const freehandBtn = group.querySelector('.freehand-btn'); const highlightBtn = group.querySelector('.highlight-btn'); const lineBtn = group.querySelector('.line-btn'); const dimLineBtn = group.querySelector('.dim-line-btn'); const textBtn = group.querySelector('.text-btn'); const undoBtn = group.querySelector('.undo-btn'); const maximizeBtn = group.querySelector('.maximize-btn'); const clearBtn = group.querySelector('.clear-btn'); const fileInput = group.querySelector('.camera-input'); const canvasContainer = group.querySelector('.canvas-container');
         let isPinching = false; let lastPinchDist = 0; let isPanning = false; let lastPanX = 0; let lastPanY = 0;
 
-        // --- FLAWLESS LOUPE ENGINE ---
-        // We use fCanvas.getPointer() to get the exact logical canvas coordinate for drawing.
-        // We use the raw Touch/Mouse event clientX/Y JUST to position the floating CSS div.
+        // FLAWLESS LOUPE: Maps physical screen pixels to internal canvas pixels perfectly
         function updateLoupe(opt) {
-            const pointer = fCanvas.getPointer(opt.e);
             const e = opt.e;
             const isTouch = e.touches && e.touches.length > 0;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
-            // Push the physical loupe element high above the finger so it's not hidden
-            const OFFSET_Y = isTouch ? 120 : 60;
+            // 1. Position Loupe visually over the finger
+            const OFFSET_Y = isTouch ? 100 : 60;
             loupeEl.style.left = (clientX - 60) + 'px';
-            loupeEl.style.top = (clientY - OFFSET_Y) + 'px';
+            loupeEl.style.top = (clientY - OFFSET_Y - 60) + 'px';
             loupeEl.style.display = 'block';
 
+            // 2. Raw DOM Bounding Box calculation
+            const rect = fCanvas.lowerCanvasEl.getBoundingClientRect();
+            const touchX = clientX - rect.left;
+            const touchY = clientY - rect.top;
+
+            // 3. Perfect scaling ratio mapping
+            const scaleX = fCanvas.lowerCanvasEl.width / rect.width;
+            const scaleY = fCanvas.lowerCanvasEl.height / rect.height;
+            const sourceX = touchX * scaleX;
+            const sourceY = touchY * scaleY;
+
             lCtx.clearRect(0, 0, 120, 120);
-
-            // Now, map the true canvas logic (pointer.x, pointer.y) to the screen to draw the zoom
-            const vpt = fCanvas.viewportTransform;
-            const screenX = pointer.x * vpt[0] + vpt[4];
-            const screenY = pointer.y * vpt[3] + vpt[5];
-
             const sWidth = 60; const sHeight = 60;
             try {
-                lCtx.drawImage(fCanvas.lowerCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
-                if (fCanvas.upperCanvasEl) {
-                    lCtx.drawImage(fCanvas.upperCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
-                }
-            } catch(err) {} 
+                lCtx.drawImage(fCanvas.lowerCanvasEl, sourceX - sWidth/2, sourceY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
+                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, sourceX - sWidth/2, sourceY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
+            } catch(err) {}
 
-            // Crosshair
             lCtx.strokeStyle = '#00E5FF'; lCtx.lineWidth = 2;
             lCtx.beginPath(); lCtx.moveTo(60, 45); lCtx.lineTo(60, 75); lCtx.moveTo(45, 60); lCtx.lineTo(75, 60); lCtx.stroke();
             
-            return pointer; // Pass the perfect coordinate back
+            return fCanvas.getPointer(opt.e);
         }
 
         fCanvas.on('mouse:wheel', function(opt) { let delta = opt.e.deltaY; let zoom = fCanvas.getZoom(); zoom *= 0.999 ** delta; if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5; fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom); opt.e.preventDefault(); opt.e.stopPropagation(); });
@@ -94,12 +93,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (activeTool === 'locked' && !isPinching) { isPanning = true; lastPanX = opt.e.clientX || (opt.e.touches && opt.e.touches[0].clientX); lastPanY = opt.e.clientY || (opt.e.touches && opt.e.touches[0].clientY); return; } 
             
             if (['calibrate', 'line', 'dim-line'].includes(activeTool)) { 
-                isDrawingLine = true; 
-                const pointer = updateLoupe(opt); // Updates loupe visually and returns precise canvas coord
-                
-                if (lineStep === 0) { 
-                    // No need to store tempStartX externally anymore, we can attach it to the marker
-                } else if (lineStep === 1 && tempMarker) { 
+                isDrawingLine = true; const pointer = updateLoupe(opt); 
+                if (lineStep === 1 && tempMarker) { 
                     let strokeCol = activeTool === 'calibrate' ? '#D4AF37' : (activeTool === 'line' ? '#FF3B30' : '#00E5FF'); 
                     let strokeW = activeTool === 'dim-line' ? 3/fCanvas.getZoom() : 4/fCanvas.getZoom(); 
                     let dash = activeTool === 'dim-line' ? [5/fCanvas.getZoom(), 5/fCanvas.getZoom()] : null; 
@@ -113,21 +108,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fCanvas.on('mouse:move', function(opt) { 
             if (isPanning && activeTool === 'locked') { let e = opt.e; let currentX = e.clientX || (e.touches && e.touches[0].clientX); let currentY = e.clientY || (e.touches && e.touches[0].clientY); if (currentX && currentY && lastPanX && lastPanY) { let vpt = fCanvas.viewportTransform; vpt[4] += currentX - lastPanX; vpt[5] += currentY - lastPanY; fCanvas.requestRenderAll(); lastPanX = currentX; lastPanY = currentY; } return; } 
-            
-            if (isDrawingLine) { 
-                const pointer = updateLoupe(opt); 
-                if (lineStep === 1 && activeLineObj) { activeLineObj.set({ x2: pointer.x, y2: pointer.y }); fCanvas.renderAll(); } 
-            } 
+            if (isDrawingLine) { const pointer = updateLoupe(opt); if (lineStep === 1 && activeLineObj) { activeLineObj.set({ x2: pointer.x, y2: pointer.y }); fCanvas.renderAll(); } } 
         });
 
         fCanvas.on('mouse:up', function(opt) { 
             if (isPanning) { isPanning = false; fCanvas.setViewportTransform(fCanvas.viewportTransform); return; } 
             if (isDrawingLine) { 
                 isDrawingLine = false; loupeEl.style.display = 'none'; 
-                
                 if (lineStep === 0) { 
-                    lineStep = 1; 
-                    const pointer = fCanvas.getPointer(opt.e); 
+                    lineStep = 1; const pointer = fCanvas.getPointer(opt.e); 
                     tempMarker = new fabric.Circle({ radius: 4/fCanvas.getZoom(), fill: '#00E5FF', left: pointer.x, top: pointer.y, originX: 'center', originY: 'center', selectable: false, evented: false }); 
                     fCanvas.add(tempMarker); fCanvas.renderAll(); 
                 } else if (lineStep === 1) { 
@@ -166,6 +155,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- PDF GENERATION ENGINE ---
+    
+    // UI Loader to mask the rendering process
+    function showPdfLoader(text) {
+        let loader = document.getElementById('pdfLoadingOverlay');
+        if(!loader) {
+            loader = document.createElement('div');
+            loader.id = 'pdfLoadingOverlay';
+            loader.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,11,20,0.98);z-index:99999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#00E5FF;font-family:Inter,sans-serif;';
+            loader.innerHTML = '<div class="loader-bar" style="width:200px;margin-bottom:20px;"><div class="loader-fill"></div></div><h2 id="pdfLoaderText" style="font-weight:600;letter-spacing:1px;text-align:center;"></h2>';
+            document.body.appendChild(loader);
+        }
+        document.getElementById('pdfLoaderText').innerText = text;
+        loader.style.display = 'flex';
+    }
+    function hidePdfLoader() { const loader = document.getElementById('pdfLoadingOverlay'); if(loader) loader.style.display = 'none'; }
+
     async function applySafeLogo(template, logoUrl) { return new Promise((resolve) => { const img = new Image(); img.crossOrigin = "Anonymous"; img.onload = function() { try { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); const b64 = canvas.toDataURL('image/png'); template.querySelectorAll('.brand-logo-img').forEach(el => { el.src = b64; el.style.display = 'inline-block'; }); resolve(); } catch(e) { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); } }; img.onerror = function() { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); }; img.src = logoUrl; }); }
     async function loadPamphletImage(url) { return new Promise((resolve) => { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.9)); }; img.onerror = () => { resolve(null); }; img.src = url; }); }
     async function populatePdfImageGrid(inputId, gridId) { const input = document.getElementById(inputId); const grid = document.getElementById(gridId); if (!grid) return; grid.innerHTML = ''; if (input && input.files && input.files.length > 0) { for (let i = 0; i < input.files.length; i++) { const file = input.files[i]; const dataUrl = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); }); const img = document.createElement('img'); img.src = dataUrl; img.style.width = '100%'; img.style.maxHeight = '250px'; img.style.objectFit = 'contain'; img.style.border = '1px solid #dee2e6'; img.style.borderRadius = '4px'; grid.appendChild(img); } } }
@@ -191,27 +196,24 @@ document.addEventListener('DOMContentLoaded', function() {
         await populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid'); await populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
     }
 
-    // --- BULLETPROOF PDF EXPORT ---
+    // INTERNAL PDF EXPORT (5 SEPARATE PAGES)
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async function() {
-        const btn = this; const originalText = btn.innerText; btn.disabled = true;
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateInternal');
+        showPdfLoader("Rendering blueprint data...");
+        
+        // Force template strictly into document flow to guarantee capture
+        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0'; template.style.left = '0'; template.style.zIndex = '999998'; 
         
         await applySafeLogo(template, data.logoSource); await renderPdfFields(data);
-        await new Promise(r => setTimeout(r, 1500)); // Crucial delay for image painting
+        await new Promise(r => setTimeout(r, 1500)); // Paint time
 
         try {
             let pages = Array.from(template.querySelectorAll('.pdf-page'));
             for(let i = 0; i < pages.length; i++) {
-                btn.innerText = `Exporting Part ${i+1}/${pages.length}...`;
+                showPdfLoader(`Exporting Part ${i+1} of ${pages.length}...`);
                 const singleDoc = new jsPDF('p', 'mm', 'a4');
                 
-                const canvas = await html2canvas(pages[i], { 
-                    scale: 2, 
-                    useCORS: true, 
-                    logging: false, 
-                    windowWidth: 800,
-                    backgroundColor: '#ffffff'
-                });
+                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff' });
                 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 const imgProps = singleDoc.getImageProperties(imgData);
@@ -223,12 +225,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 await new Promise(r => setTimeout(r, 600)); 
             }
         } catch (e) { alert("Capture Failed: " + e.message); } 
-        finally { btn.innerText = originalText; btn.disabled = false; }
+        finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
     });
 
+    // CUSTOMER PDF EXPORT (SINGLE DOCUMENT)
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
-        const btn = this; const originalText = btn.innerText; btn.disabled = true;
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateCustomer');
+        showPdfLoader("Compiling Customer Pack...");
+        
+        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0'; template.style.left = '0'; template.style.zIndex = '999998';
         
         await applySafeLogo(template, data.logoSource);
         const firstName = data.clientName.split(' ')[0] || 'Customer';
@@ -239,20 +244,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('lp-revisit').innerText = data.revisitDate ? `I look forward to our next catch-up scheduled for ${data.revisitDate}.` : `We haven't booked in a date for our next catch-up just yet.`;
         document.getElementById('lp-designer-name').innerText = data.designerName; document.getElementById('lp-designer-contact').innerText = `${data.designerPhone} | ${data.designerEmail}`;
         
-        await new Promise(r => setTimeout(r, 1500)); // Crucial delay
+        await new Promise(r => setTimeout(r, 1500)); 
 
         try {
-            btn.innerText = `Printing Cover Letter...`;
+            showPdfLoader("Stitching Pamphlets...");
             const doc = new jsPDF('p', 'mm', 'a4');
             const pageEl = template.querySelector('.pdf-page');
             
-            const canvas = await html2canvas(pageEl, { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false, 
-                windowWidth: 800,
-                backgroundColor: '#ffffff'
-            });
+            const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff' });
             
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const imgProps = doc.getImageProperties(imgData);
@@ -260,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
             doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             
-            btn.innerText = "Stitching Pamphlets...";
             const pagesToAppend = ['pamphlet-who-we-are.jpg', 'pamphlet-why-choose-us.jpg', 'pamphlet-journey.jpg', 'pamphlet-tailored.jpg', 'pamphlet-piling.jpg'];
             if (data.weepVents === 'Yes') pagesToAppend.push('pamphlet-protecting-home.jpg'); if (data.roofType === 'Ultra380') pagesToAppend.push('pamphlet-ultra380.jpg'); if (data.roofType === 'LivinRoof') pagesToAppend.push('pamphlet-livinroof.jpg'); if (data.roofType === 'Glass Roof') pagesToAppend.push('pamphlet-glass-roof.jpg'); if (data.roofType === 'Flat Roof') pagesToAppend.push('pamphlet-flat-roof.jpg'); if (data.sapCalcs === 'Yes') pagesToAppend.push('pamphlet-sap-calcs.jpg'); if (data.planningPerms === 'Full Planning' || data.planningPerms === 'Pre Approved Planning') pagesToAppend.push('pamphlet-planning.jpg');
             
@@ -268,6 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             doc.save(`${data.clientName.trim().split(' ').pop() || 'Customer'}_Design.pdf`);
         } catch (e) { alert("Capture Failed: " + e.message); } 
-        finally { btn.innerText = originalText; btn.disabled = false; }
+        finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
     });
 });
