@@ -100,7 +100,7 @@ select.form-group__input { padding-right: 38px; cursor: pointer; }
 .tool-btn.accent-btn { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); margin-left: 4px; }
 .tool-btn.accent-btn.active { background: var(--accent); color: var(--base-bg); border-color: var(--accent); }
 
-#precisionLoupe { position: fixed; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; pointer-events: none; z-index: 999999; background: #0b1118; }
+#precisionLoupe { position: fixed; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; pointer-events: none; z-index: 999999; background: #0b1118; margin: 0; padding: 0; }
 
 .conditional-field { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 0; }
 .conditional-field.visible { max-height: 1200px; opacity: 1; margin-top: 25px; }
