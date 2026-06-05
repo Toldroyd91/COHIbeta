@@ -12,26 +12,26 @@
       gtag('js', new Date());
       gtag('config', 'G-0J8DC9GD6Z');
     </script>
-<style>
 
-     html, body {
-        margin: 0;
-        padding: 0;
-        min-height: 100%;
-        background: transparent !important; 
-    }
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: transparent !important; 
+        }
 
-    body::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(to bottom, #000000 0%, #002f54 100%);
-        z-index: -999;
-    }
-
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0F3759 0%, #04111c 100%);
+            z-index: -999;
+        }
+        
         .btn-danger { background: #8b0000; color: white; border: none; }
         .canvas-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .tool-btn { 
@@ -97,6 +97,7 @@
                 <div class="canvas-container"><canvas id="canvas-frontelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -116,6 +117,7 @@
                 <div class="canvas-container"><canvas id="canvas-sideelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -135,6 +137,7 @@
                 <div class="canvas-container"><canvas id="canvas-rearelevation" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -164,6 +167,7 @@
                 <div class="canvas-container"><canvas id="canvas-housematerialphoto" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -185,6 +189,7 @@
                 <div class="canvas-container"><canvas id="canvas-treelocations" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -206,6 +211,7 @@
                 <div class="canvas-container"><canvas id="canvas-manhole" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -227,6 +233,7 @@
                 <div class="canvas-container"><canvas id="canvas-weepvents" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -250,6 +257,7 @@
                 <div class="canvas-container"><canvas id="canvas-rwpsvp" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -297,6 +305,7 @@
                 <div class="canvas-container" style="background:#fff;"><canvas id="canvas-designersketch" width="600" height="400"></canvas></div>
                 <div class="canvas-controls">
                     <button type="button" class="tool-btn lock-btn canvas-locked">🔒 Locked for Scroll</button>
+                    <button type="button" class="tool-btn calibrate-btn" style="background: #6f42c1; border-color: #6f42c1; color: white;">📏 Set Scale</button>
                     <button type="button" class="tool-btn freehand-btn">✏️ Freehand</button>
                     <button type="button" class="tool-btn highlight-btn">🖍️ Highlight</button>
                     <button type="button" class="tool-btn line-btn">📏 Line</button>
@@ -325,7 +334,6 @@
         <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
     </main>
 
-    <!-- INTERNAL PDF (3 PAGES) -->
     <div id="pdfTemplateInternal" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
         <div class="pdf-page" style="page-break-after: always; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding-top: 20px;">
             <div>
@@ -411,7 +419,6 @@
         </div>
     </div>
 
-    <!-- CUSTOMER PDF: 1 HTML PAGE -->
     <div id="pdfTemplateCustomer" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
         <div class="pdf-page" style="page-break-after: always; text-align: left; padding: 30px 50px; font-size: 15px; line-height: 1.8; color: #333;">
             <div style="text-align: center; margin-bottom: 40px;">
@@ -433,7 +440,6 @@
         </div>
     </div>
 
-    <!-- PROFILE MODAL HTML -->
     <div id="profileModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h2>Manage Designer Profile</h2>
