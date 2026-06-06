@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] Full Engine Loaded (Stable PDF Mode).");
+    console.log("[Blueprint Enterprise] Engine Initialized (Restored Stable PDF/UI Logic)");
     const { jsPDF } = window.jspdf;
 
-    // --- 1. Profile Manager ---
+    // --- 1. Profile Manager (Restored) ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
     const refreshDropdown = () => {
         const list = document.getElementById('designerList');
@@ -32,42 +32,28 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('profileModal').style.display = 'none';
     });
 
-    // --- 2. Canvas & Tools (The stable drawing logic) ---
+    // --- 2. Canvas Engine (Stable) ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
         const canvasEl = group.querySelector('canvas');
         if (!canvasEl) return;
-
         const fCanvas = new fabric.Canvas(canvasEl.id, { isDrawingMode: false, allowTouchScrolling: true });
         window.appCanvases[id] = fCanvas;
-
-        const savedData = JSON.parse(localStorage.getItem('surveyAppData')) || {};
-        if(savedData['canvas_' + id]) fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
-
-        // Tool binding (Simplified to restore stability)
-        group.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // This is where we will map your tool logic back precisely
-                if (btn.classList.contains('freehand-btn')) fCanvas.isDrawingMode = true;
-                else fCanvas.isDrawingMode = false;
-            });
-        });
     });
 
-    // --- 3. PDF Generator (Memory-Safe) ---
+    // --- 3. Stable PDF Generation (Memory-Safe) ---
     async function executeSecurePDFGeneration(templateId, fileName, data) {
         const template = document.getElementById(templateId);
         const mainApp = document.querySelector('main');
         
-        // Hide UI to ensure Safari doesn't run out of memory during capture
+        // Brute-force memory optimization: Hide main UI
         mainApp.style.display = 'none';
         template.style.display = 'block';
         window.scrollTo(0, 0);
 
         try {
-            await new Promise(r => setTimeout(r, 800)); // Allow render
+            await new Promise(r => setTimeout(r, 1000)); // Allow render to catch up
             const doc = new jsPDF('p', 'mm', 'a4');
             const margin = 10;
             const pdfPrintWidth = doc.internal.pageSize.getWidth() - (margin * 2);
@@ -75,14 +61,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (templateId === 'pdfTemplateInternal') {
                 let pages = Array.from(template.querySelectorAll('.pdf-page'));
                 for(let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], { scale: 1.5, useCORS: true, windowWidth: 800 });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
+                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, windowWidth: 800 });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
                     if (i > 0) doc.addPage();
                     doc.addImage(imgData, 'JPEG', margin, margin, pdfPrintWidth, (canvas.height * pdfPrintWidth) / canvas.width);
                 }
             } else {
-                const canvas = await html2canvas(template.querySelector('.pdf-page'), { scale: 1.5, useCORS: true, windowWidth: 800 });
-                doc.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', margin, margin, pdfPrintWidth, (canvas.height * pdfPrintWidth) / canvas.width);
+                const canvas = await html2canvas(template.querySelector('.pdf-page'), { scale: 2, useCORS: true, windowWidth: 800 });
+                doc.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', margin, margin, pdfPrintWidth, (canvas.height * pdfPrintWidth) / canvas.width);
             }
             doc.save(fileName);
         } catch (e) { alert("PDF Error: " + e.message); } 
