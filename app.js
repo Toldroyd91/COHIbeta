@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Hardened Engine)");
+    console.log("[Blueprint Enterprise] OS Boot Sequence Initiated. (Memory-Safe Engine v7)");
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('Service Worker Error', err)); }
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const notesArea = document.getElementById('designerNotes'); const dictateBtn = document.getElementById('dictateBtn');
     if (dictateBtn) { if ('webkitSpeechRecognition' in window) { const rec = new webkitSpeechRecognition(); rec.continuous = true; rec.interimResults = true; rec.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. '; } const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data['designerNotes'] = notesArea.value; localStorage.setItem('surveyAppData', JSON.stringify(data)); }; dictateBtn.onclick = () => { if(rec.running) { rec.stop(); dictateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg> Dictate'; } else { rec.start(); dictateBtn.innerHTML = '🛑 Stop'; } rec.running = !rec.running; }; } else { dictateBtn.style.display = 'none'; } }
 
-    // --- FABRIC CANVAS & LOUPE FIX ---
+    // --- FABRIC CANVAS & FLATTENED RETINA LOUPE ---
     const loupeEl = document.getElementById('precisionLoupe'); const lCtx = loupeEl.getContext('2d'); window.appCanvases = {};
     
     document.querySelectorAll('.canvas-group').forEach(group => {
@@ -50,38 +50,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const lockBtn = group.querySelector('.lock-btn'); const calibrateBtn = group.querySelector('.calibrate-btn'); const freehandBtn = group.querySelector('.freehand-btn'); const highlightBtn = group.querySelector('.highlight-btn'); const lineBtn = group.querySelector('.line-btn'); const dimLineBtn = group.querySelector('.dim-line-btn'); const textBtn = group.querySelector('.text-btn'); const undoBtn = group.querySelector('.undo-btn'); const maximizeBtn = group.querySelector('.maximize-btn'); const clearBtn = group.querySelector('.clear-btn'); const fileInput = group.querySelector('.camera-input'); const canvasContainer = group.querySelector('.canvas-container');
         let isPinching = false; let lastPinchDist = 0; let isPanning = false; let lastPanX = 0; let lastPanY = 0;
 
-        // FIXED LOUPE: Separates visual finger position (pageX/Y) from internal canvas logic
+        // FIXED LOUPE: Integrates Retina Scaling to perfectly map touch pixels
         function updateLoupe(opt) {
             const e = opt.e;
             const isTouch = e.touches && e.touches.length > 0;
             const pageX = isTouch ? e.touches[0].pageX : e.pageX;
             const pageY = isTouch ? e.touches[0].pageY : e.pageY;
 
-            // 1. Position Loupe visually over the finger (using pageX/pageY so scroll doesn't break it)
+            // 1. Position Loupe visually over the finger
             const OFFSET_Y = isTouch ? 120 : 60;
             loupeEl.style.left = (pageX - 60) + 'px';
             loupeEl.style.top = (pageY - OFFSET_Y) + 'px';
             loupeEl.style.display = 'block';
 
-            // 2. Get exact canvas logical coordinates
+            // 2. Get exact logical coordinates & Retina Scaling factor
             const pointer = fCanvas.getPointer(e);
-            
-            // 3. Map logical coordinates to screen for rendering inside the loupe
+            const retina = fCanvas.getRetinaScaling();
             const vpt = fCanvas.viewportTransform;
-            const screenX = pointer.x * vpt[0] + vpt[4];
-            const screenY = pointer.y * vpt[3] + vpt[5];
+            
+            // 3. Map to the exact physical pixel on the HTML Canvas
+            const realX = (pointer.x * vpt[0] + vpt[4]) * retina;
+            const realY = (pointer.y * vpt[3] + vpt[5]) * retina;
 
             lCtx.clearRect(0, 0, 120, 120);
             const sWidth = 60; const sHeight = 60;
             try {
-                lCtx.drawImage(fCanvas.lowerCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
-                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
+                // Crop from the exact native pixel block
+                lCtx.drawImage(fCanvas.lowerCanvasEl, realX - sWidth/2, realY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
+                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, realX - sWidth/2, realY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
             } catch(err) {}
 
             lCtx.strokeStyle = '#00E5FF'; lCtx.lineWidth = 2;
             lCtx.beginPath(); lCtx.moveTo(60, 45); lCtx.lineTo(60, 75); lCtx.moveTo(45, 60); lCtx.lineTo(75, 60); lCtx.stroke();
             
-            return pointer;
+            return pointer; // Pass the perfect logical pointer back for line drawing
         }
 
         fCanvas.on('mouse:wheel', function(opt) { let delta = opt.e.deltaY; let zoom = fCanvas.getZoom(); zoom *= 0.999 ** delta; if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5; fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom); opt.e.preventDefault(); opt.e.stopPropagation(); });
@@ -151,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (fileInput) { fileInput.addEventListener('change', function(e) { if (!e.target.files || e.target.files.length === 0) return; const label = fileInput.nextElementSibling; label.style.borderColor = "#00E5FF"; label.style.color = "#00E5FF"; const file = e.target.files[0]; const reader = new FileReader(); reader.onload = function(f) { const nativeImg = new Image(); nativeImg.onload = function() { const MAX_WIDTH = 1200; let width = nativeImg.width; let height = nativeImg.height; if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; } const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height; const ctx = tempCanvas.getContext('2d'); ctx.drawImage(nativeImg, 0, 0, width, height); const safeDataUrl = tempCanvas.toDataURL('image/jpeg', 0.8); fCanvas.setViewportTransform([1,0,0,1,0,0]); fabric.Image.fromURL(safeDataUrl, function(fabricImg) { const imgRatio = fabricImg.height / fabricImg.width; const maxWidth = group.querySelector('.canvas-container').clientWidth || 600; const dynamicHeight = maxWidth * imgRatio; fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight }); const scale = Math.min(fCanvas.width / fabricImg.width, fCanvas.height / fabricImg.height); fabricImg.set({ originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, left: fCanvas.width / 2, top: fCanvas.height / 2, selectable: false }); fCanvas.setBackgroundImage(fabricImg, () => { fCanvas.calcOffset(); fCanvas.renderAll(); saveCanvasState(); }); }); }; nativeImg.src = f.target.result; }; reader.readAsDataURL(file); }); }
     });
 
-    // --- PDF GENERATION ENGINE ---
+    // --- PDF GENERATION ENGINE & MEMORY FIX ---
     
     function showPdfLoader(text) {
         let loader = document.getElementById('pdfLoadingOverlay');
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function hidePdfLoader() { const loader = document.getElementById('pdfLoadingOverlay'); if(loader) loader.style.display = 'none'; }
 
     async function applySafeLogo(template, logoUrl) { return new Promise((resolve) => { const img = new Image(); img.crossOrigin = "Anonymous"; img.onload = function() { try { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); const b64 = canvas.toDataURL('image/png'); template.querySelectorAll('.brand-logo-img').forEach(el => { el.src = b64; el.style.display = 'inline-block'; }); resolve(); } catch(e) { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); } }; img.onerror = function() { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); }; img.src = logoUrl; }); }
-    async function loadPamphletImage(url) { return new Promise((resolve) => { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.9)); }; img.onerror = () => { resolve(null); }; img.src = url; }); }
+    async function loadPamphletImage(url) { return new Promise((resolve) => { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.8)); }; img.onerror = () => { resolve(null); }; img.src = url; }); }
     async function populatePdfImageGrid(inputId, gridId) { const input = document.getElementById(inputId); const grid = document.getElementById(gridId); if (!grid) return; grid.innerHTML = ''; if (input && input.files && input.files.length > 0) { for (let i = 0; i < input.files.length; i++) { const file = input.files[i]; const dataUrl = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); }); const img = document.createElement('img'); img.src = dataUrl; img.style.width = '100%'; img.style.maxHeight = '250px'; img.style.objectFit = 'contain'; img.style.border = '1px solid #dee2e6'; img.style.borderRadius = '4px'; grid.appendChild(img); } } }
 
     function getSurveyData() {
@@ -185,22 +187,22 @@ document.addEventListener('DOMContentLoaded', function() {
         
         ['frontelevation', 'sideelevation', 'rearelevation', 'housematerialphoto', 'manhole', 'weepvents', 'rwpsvp', 'treelocations', 'designersketch'].forEach(id => {
             const fCanvas = window.appCanvases[id]; const imgTag = document.getElementById(`pdfImgInternal-${id}`);
-            if (fCanvas && imgTag) { fCanvas.setViewportTransform([1,0,0,1,0,0]); fCanvas.discardActiveObject(); fCanvas.renderAll(); imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.9 }); }
+            // Lowered quality to 0.6 to prevent Safari memory panic during HTML2Canvas
+            if (fCanvas && imgTag) { fCanvas.setViewportTransform([1,0,0,1,0,0]); fCanvas.discardActiveObject(); fCanvas.renderAll(); imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.6 }); }
         });
         await populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid'); await populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
     }
 
-    // --- FIX: FORCE SCROLL TO TOP & POSITION TEMPLATE OVER SCREEN TO PREVENT BLANK RENDER ---
+    // --- FIX: SAFE MEMORY PDF EXPORT ---
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async function() {
-        window.scrollTo(0, 0); // Crucial for Safari rendering
+        window.scrollTo(0, 0); 
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateInternal');
         showPdfLoader("Rendering blueprint data...");
         
-        // Put the template directly onto the visible screen (but underneath the black loading mask)
         template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0px'; template.style.left = '0px'; template.style.zIndex = '9998'; 
         
         await applySafeLogo(template, data.logoSource); await renderPdfFields(data);
-        await new Promise(r => setTimeout(r, 2000)); // Extra time for iPad image decoding
+        await new Promise(r => setTimeout(r, 2000)); 
 
         try {
             let pages = Array.from(template.querySelectorAll('.pdf-page'));
@@ -208,10 +210,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 showPdfLoader(`Exporting Part ${i+1} of ${pages.length}...`);
                 const singleDoc = new jsPDF('p', 'mm', 'a4');
                 
-                // scrollX/scrollY forced to 0 fixes the white-offset issue on mobile
-                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
+                // SCALE 1 IS CRITICAL: iPad Safari crashes on scale 2 during heavy multi-page exports
+                const canvas = await html2canvas(pages[i], { scale: 1, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
                 
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.85);
                 const imgProps = singleDoc.getImageProperties(imgData);
                 const pdfWidth = singleDoc.internal.pageSize.getWidth();
                 const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -224,7 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
         finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
     });
 
-    // --- FIX: CUSTOMER PDF ---
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
         window.scrollTo(0, 0);
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateCustomer');
@@ -248,9 +249,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const doc = new jsPDF('p', 'mm', 'a4');
             const pageEl = template.querySelector('.pdf-page');
             
-            const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
+            // Scaled down to prevent iOS RAM panic
+            const canvas = await html2canvas(pageEl, { scale: 1, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
             
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgData = canvas.toDataURL('image/jpeg', 0.85);
             const imgProps = doc.getImageProperties(imgData);
             const pdfWidth = doc.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
