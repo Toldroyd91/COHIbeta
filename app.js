@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] OS Boot Sequence Initiated. (Memory-Safe Engine v7)");
+    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Restoring Stable PDF Engine)");
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('Service Worker Error', err)); }
 
@@ -17,144 +17,491 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', evaluateConditionals));
 
-    // --- PROFILE & AUTOSAVE ---
+    // --- 1. PROFILE MANAGER ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
-    const refreshDropdown = () => { const list = document.getElementById('designerList'); if (list) list.innerHTML = Object.keys(window.designerProfiles).map(n => `<option value="${n}">`).join(''); }; refreshDropdown();
+    const refreshDropdown = () => {
+        const list = document.getElementById('designerList');
+        if (list) list.innerHTML = Object.keys(window.designerProfiles).map(n => `<option value="${n}">`).join('');
+    };
+    refreshDropdown();
 
-    document.getElementById('openProfileManagerBtn')?.addEventListener('click', (e) => { e.preventDefault(); const cur = document.getElementById('designerSelect').value; if (window.designerProfiles[cur]) { document.getElementById('profName').value = cur; document.getElementById('profEmail').value = window.designerProfiles[cur].email; document.getElementById('profPhone').value = window.designerProfiles[cur].phone; } document.getElementById('profileModal').style.display = 'flex'; });
+    document.getElementById('openProfileManagerBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const cur = document.getElementById('designerSelect').value;
+        if (window.designerProfiles[cur]) {
+            document.getElementById('profName').value = cur;
+            document.getElementById('profEmail').value = window.designerProfiles[cur].email;
+            document.getElementById('profPhone').value = window.designerProfiles[cur].phone;
+        }
+        document.getElementById('profileModal').style.display = 'flex';
+    });
+
     document.getElementById('closeProfileBtn')?.addEventListener('click', () => document.getElementById('profileModal').style.display = 'none');
-    document.getElementById('saveProfileBtn')?.addEventListener('click', () => { const name = document.getElementById('profName').value.trim(); if (!name) return alert("Enter designer name"); window.designerProfiles[name] = { email: document.getElementById('profEmail').value, phone: document.getElementById('profPhone').value }; localStorage.setItem('savedDesignerProfiles', JSON.stringify(window.designerProfiles)); document.getElementById('designerSelect').value = name; refreshDropdown(); document.getElementById('profileModal').style.display = 'none'; });
-
-    document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => { const saved = JSON.parse(localStorage.getItem('surveyAppData')) || {}; if (saved[input.id]) input.value = saved[input.id]; input.addEventListener('input', () => { const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data[input.id] = input.value; localStorage.setItem('surveyAppData', JSON.stringify(data)); }); }); evaluateConditionals(); 
-
-    document.getElementById('resetFormBtn')?.addEventListener('click', () => { if(confirm("Are you sure you want to completely clear the current session?")) { localStorage.removeItem('surveyAppData'); location.reload(); } });
-
-    // --- DICTATION ---
-    const notesArea = document.getElementById('designerNotes'); const dictateBtn = document.getElementById('dictateBtn');
-    if (dictateBtn) { if ('webkitSpeechRecognition' in window) { const rec = new webkitSpeechRecognition(); rec.continuous = true; rec.interimResults = true; rec.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. '; } const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data['designerNotes'] = notesArea.value; localStorage.setItem('surveyAppData', JSON.stringify(data)); }; dictateBtn.onclick = () => { if(rec.running) { rec.stop(); dictateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg> Dictate'; } else { rec.start(); dictateBtn.innerHTML = '🛑 Stop'; } rec.running = !rec.running; }; } else { dictateBtn.style.display = 'none'; } }
-
-    // --- FABRIC CANVAS & FLATTENED RETINA LOUPE ---
-    const loupeEl = document.getElementById('precisionLoupe'); const lCtx = loupeEl.getContext('2d'); window.appCanvases = {};
     
+    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('profName').value.trim();
+        if (!name) return alert("Enter designer name");
+        window.designerProfiles[name] = { email: document.getElementById('profEmail').value, phone: document.getElementById('profPhone').value };
+        localStorage.setItem('savedDesignerProfiles', JSON.stringify(window.designerProfiles));
+        document.getElementById('designerSelect').value = name;
+        refreshDropdown();
+        document.getElementById('profileModal').style.display = 'none';
+    });
+
+    // --- 2. AUTOSAVE ENGINE ---
+    document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => {
+        const saved = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+        if (saved[input.id]) input.value = saved[input.id];
+        input.addEventListener('input', () => {
+            const data = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+            data[input.id] = input.value;
+            localStorage.setItem('surveyAppData', JSON.stringify(data));
+        });
+    });
+
+    document.getElementById('resetFormBtn')?.addEventListener('click', () => {
+        if(confirm("Are you sure you want to clear the entire form for a new appointment?")) {
+            localStorage.removeItem('surveyAppData');
+            location.reload();
+        }
+    });
+
+    // --- 3. VOICE DICTATION ---
+    const notesArea = document.getElementById('designerNotes');
+    const dictateBtn = document.getElementById('dictateBtn');
+    if (dictateBtn) {
+        if ('webkitSpeechRecognition' in window) {
+            const rec = new webkitSpeechRecognition();
+            rec.continuous = true; rec.interimResults = true;
+            rec.onresult = (e) => {
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. ';
+                }
+                const data = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+                data['designerNotes'] = notesArea.value;
+                localStorage.setItem('surveyAppData', JSON.stringify(data));
+            };
+            dictateBtn.onclick = () => {
+                if(rec.running) { 
+                    rec.stop(); 
+                    dictateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg> Dictate';
+                } else { 
+                    rec.start(); 
+                    dictateBtn.innerHTML = '🛑 Stop'; 
+                }
+                rec.running = !rec.running;
+            };
+        } else {
+            dictateBtn.style.display = 'none'; 
+        }
+    }
+
+    // --- 4. INTERACTIVE FABRIC VECTOR IMPLEMENTATION (STABLE) ---
+    window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
-        const id = group.getAttribute('data-id'); const canvasEl = group.querySelector('canvas'); if (!canvasEl) return;
-        const fCanvas = new fabric.Canvas(canvasEl.id, { isDrawingMode: false, allowTouchScrolling: true, selection: false }); fCanvas.freeDrawingBrush.color = '#00E5FF'; fCanvas.freeDrawingBrush.width = 4; window.appCanvases[id] = fCanvas;
-        
+        const id = group.getAttribute('data-id');
+        const canvasEl = group.querySelector('canvas');
+        if (!canvasEl) return;
+
+        const fCanvas = new fabric.Canvas(canvasEl.id, { 
+            isDrawingMode: false,
+            allowTouchScrolling: true,
+            selection: false
+        });
+        fCanvas.freeDrawingBrush.color = '#00E5FF';
+        fCanvas.freeDrawingBrush.width = 4;
+        window.appCanvases[id] = fCanvas;
+
         const savedData = JSON.parse(localStorage.getItem('surveyAppData')) || {}; 
         if(savedData['canvas_' + id]) fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
         
         const saveCanvasState = () => { const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data['canvas_' + id] = JSON.stringify(fCanvas.toJSON()); localStorage.setItem('surveyAppData', JSON.stringify(data)); }; 
         fCanvas.on('object:added', saveCanvasState); fCanvas.on('object:modified', saveCanvasState); fCanvas.on('object:removed', saveCanvasState);
 
-        let activeTool = 'locked'; let isDrawingLine = false; let activeLineObj = null; let lineStep = 0; let tempMarker = null; let scaleRatio = null; 
-        const lockBtn = group.querySelector('.lock-btn'); const calibrateBtn = group.querySelector('.calibrate-btn'); const freehandBtn = group.querySelector('.freehand-btn'); const highlightBtn = group.querySelector('.highlight-btn'); const lineBtn = group.querySelector('.line-btn'); const dimLineBtn = group.querySelector('.dim-line-btn'); const textBtn = group.querySelector('.text-btn'); const undoBtn = group.querySelector('.undo-btn'); const maximizeBtn = group.querySelector('.maximize-btn'); const clearBtn = group.querySelector('.clear-btn'); const fileInput = group.querySelector('.camera-input'); const canvasContainer = group.querySelector('.canvas-container');
+        let activeTool = 'locked'; 
+        let isDrawingLine = false;
+        let activeLineObj = null;
+        let startX = 0; let startY = 0;
+
+        const lockBtn = group.querySelector('.lock-btn');
+        const freehandBtn = group.querySelector('.freehand-btn');
+        const highlightBtn = group.querySelector('.highlight-btn');
+        const lineBtn = group.querySelector('.line-btn');
+        const dimLineBtn = group.querySelector('.dim-line-btn');
+        const textBtn = group.querySelector('.text-btn');
+        const calibrateBtn = group.querySelector('.calibrate-btn');
+        const undoBtn = group.querySelector('.undo-btn');
+        const maximizeBtn = group.querySelector('.maximize-btn');
+        const clearBtn = group.querySelector('.clear-btn');
+        const fileInput = group.querySelector('.camera-input');
+        const canvasContainer = group.querySelector('.canvas-container');
+
         let isPinching = false; let lastPinchDist = 0; let isPanning = false; let lastPanX = 0; let lastPanY = 0;
 
-        // FIXED LOUPE: Integrates Retina Scaling to perfectly map touch pixels
-        function updateLoupe(opt) {
-            const e = opt.e;
-            const isTouch = e.touches && e.touches.length > 0;
-            const pageX = isTouch ? e.touches[0].pageX : e.pageX;
-            const pageY = isTouch ? e.touches[0].pageY : e.pageY;
+        fCanvas.on('mouse:wheel', function(opt) {
+            let delta = opt.e.deltaY;
+            let zoom = fCanvas.getZoom();
+            zoom *= 0.999 ** delta;
+            if (zoom > 10) zoom = 10;
+            if (zoom < 0.5) zoom = 0.5;
+            fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            opt.e.preventDefault();
+            opt.e.stopPropagation();
+        });
 
-            // 1. Position Loupe visually over the finger
-            const OFFSET_Y = isTouch ? 120 : 60;
-            loupeEl.style.left = (pageX - 60) + 'px';
-            loupeEl.style.top = (pageY - OFFSET_Y) + 'px';
-            loupeEl.style.display = 'block';
+        fCanvas.on('mouse:down', function(opt) {
+            if (activeTool === 'locked' && !isPinching) {
+                isPanning = true;
+                lastPanX = opt.e.clientX || (opt.e.touches && opt.e.touches[0].clientX);
+                lastPanY = opt.e.clientY || (opt.e.touches && opt.e.touches[0].clientY);
+            }
+        });
 
-            // 2. Get exact logical coordinates & Retina Scaling factor
-            const pointer = fCanvas.getPointer(e);
-            const retina = fCanvas.getRetinaScaling();
-            const vpt = fCanvas.viewportTransform;
+        fCanvas.on('mouse:move', function(opt) {
+            if (isPanning && activeTool === 'locked') {
+                let e = opt.e;
+                let currentX = e.clientX || (e.touches && e.touches[0].clientX);
+                let currentY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (currentX && currentY && lastPanX && lastPanY) {
+                    let vpt = fCanvas.viewportTransform;
+                    vpt[4] += currentX - lastPanX; 
+                    vpt[5] += currentY - lastPanY; 
+                    fCanvas.requestRenderAll();
+                    lastPanX = currentX;
+                    lastPanY = currentY;
+                }
+            }
+        });
+
+        fCanvas.on('mouse:up', function() {
+            isPanning = false;
+            fCanvas.setViewportTransform(fCanvas.viewportTransform); 
+        });
+
+        canvasContainer.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                isPinching = true; isPanning = false; fCanvas.isDrawingMode = false; 
+                lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            }
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchmove', function(e) {
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault(); 
+                let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                let zoom = fCanvas.getZoom(); zoom *= (currentDist / lastPinchDist); 
+                if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5;
+                let rect = canvasContainer.getBoundingClientRect();
+                let pinchCenterX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+                let pinchCenterY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+                fCanvas.zoomToPoint({ x: pinchCenterX, y: pinchCenterY }, zoom);
+                lastPinchDist = currentDist;
+            }
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchend', function(e) {
+            if (isPinching && e.touches.length < 2) {
+                isPinching = false;
+                if (activeTool === 'freehand' || activeTool === 'highlight') fCanvas.isDrawingMode = true; 
+            }
+        });
+
+        function setButtonState(tool) {
+            activeTool = tool;
+            const currentZoom = fCanvas.getZoom();
+
+            lockBtn?.classList.toggle('canvas-locked', tool === 'locked');
+            if (lockBtn) lockBtn.innerHTML = (tool === 'locked') ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
             
-            // 3. Map to the exact physical pixel on the HTML Canvas
-            const realX = (pointer.x * vpt[0] + vpt[4]) * retina;
-            const realY = (pointer.y * vpt[3] + vpt[5]) * retina;
+            freehandBtn?.classList.toggle('active', tool === 'freehand');
+            highlightBtn?.classList.toggle('active', tool === 'highlight');
+            lineBtn?.classList.toggle('active', tool === 'line');
+            dimLineBtn?.classList.toggle('active', tool === 'dim-line');
+            textBtn?.classList.toggle('active', tool === 'text');
+            calibrateBtn?.classList.toggle('active', tool === 'calibrate');
 
-            lCtx.clearRect(0, 0, 120, 120);
-            const sWidth = 60; const sHeight = 60;
-            try {
-                // Crop from the exact native pixel block
-                lCtx.drawImage(fCanvas.lowerCanvasEl, realX - sWidth/2, realY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
-                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, realX - sWidth/2, realY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
-            } catch(err) {}
-
-            lCtx.strokeStyle = '#00E5FF'; lCtx.lineWidth = 2;
-            lCtx.beginPath(); lCtx.moveTo(60, 45); lCtx.lineTo(60, 75); lCtx.moveTo(45, 60); lCtx.lineTo(75, 60); lCtx.stroke();
+            fCanvas.isDrawingMode = (tool === 'freehand' || tool === 'highlight');
             
-            return pointer; // Pass the perfect logical pointer back for line drawing
+            if (tool === 'freehand') {
+                fCanvas.freeDrawingBrush.color = '#00E5FF';
+                fCanvas.freeDrawingBrush.width = 4 / currentZoom;
+            } else if (tool === 'highlight') {
+                fCanvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.4)';
+                fCanvas.freeDrawingBrush.width = 25 / currentZoom;
+            }
+
+            fCanvas.selection = (tool === 'text' || tool === 'locked'); 
+            fCanvas.allowTouchScrolling = (tool === 'locked' || tool === 'text');
+
+            fCanvas.getObjects().forEach(obj => {
+                obj.selectable = (tool === 'text');
+                obj.editable = (tool === 'text');
+            });
+
+            fCanvas.discardActiveObject();
+            
+            if (tool === 'line') bindLineTool();
+            else if (tool === 'dim-line') bindDimLineTool();
+            else if (tool === 'text') bindTextTool();
+
+            fCanvas.calcOffset();
+            fCanvas.renderAll();
         }
 
-        fCanvas.on('mouse:wheel', function(opt) { let delta = opt.e.deltaY; let zoom = fCanvas.getZoom(); zoom *= 0.999 ** delta; if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5; fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom); opt.e.preventDefault(); opt.e.stopPropagation(); });
-        
-        fCanvas.on('mouse:down', function(opt) { 
-            if (activeTool === 'locked' && !isPinching) { isPanning = true; lastPanX = opt.e.clientX || (opt.e.touches && opt.e.touches[0].clientX); lastPanY = opt.e.clientY || (opt.e.touches && opt.e.touches[0].clientY); return; } 
-            
-            if (['calibrate', 'line', 'dim-line'].includes(activeTool)) { 
-                isDrawingLine = true; const pointer = updateLoupe(opt); 
-                if (lineStep === 1 && tempMarker) { 
-                    let strokeCol = activeTool === 'calibrate' ? '#D4AF37' : (activeTool === 'line' ? '#FF3B30' : '#00E5FF'); 
-                    let strokeW = activeTool === 'dim-line' ? 3/fCanvas.getZoom() : 4/fCanvas.getZoom(); 
-                    let dash = activeTool === 'dim-line' ? [5/fCanvas.getZoom(), 5/fCanvas.getZoom()] : null; 
-                    activeLineObj = new fabric.Line([tempMarker.left, tempMarker.top, pointer.x, pointer.y], { strokeWidth: strokeW, stroke: strokeCol, strokeDashArray: dash, selectable: false, evented: false }); 
-                    fCanvas.add(activeLineObj); 
-                } 
-            } 
-            
-            if (activeTool === 'text') { const target = fCanvas.findTarget(opt.e); if (target && (target.type === 'i-text' || target.type === 'text' || target.type === 'group')) return; const pointer = fCanvas.getPointer(opt.e); const z = fCanvas.getZoom(); const mmText = new fabric.IText('Text', { left: pointer.x, top: pointer.y, fontFamily: 'Inter', fontSize: 20 / z, fill: '#00E5FF', fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.8)', padding: 6 / z, cornerSize: 8 / z, transparentCorners: false, hasControls: true }); fCanvas.add(mmText); fCanvas.setActiveObject(mmText); fCanvas.renderAll(); saveCanvasState(); } 
+        function bindLineTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'line') return;
+                isDrawingLine = true;
+                const pointer = fCanvas.getPointer(o.e);
+                startX = pointer.x; startY = pointer.y;
+                const z = fCanvas.getZoom();
+
+                activeLineObj = new fabric.Line([startX, startY, startX, startY], {
+                    strokeWidth: 4 / z, stroke: '#FF3B30', originX: 'center', originY: 'center', selectable: false, hasControls: false
+                });
+                fCanvas.add(activeLineObj);
+            });
+
+            fCanvas.on('mouse:move', function(o) {
+                if (!isDrawingLine || activeTool !== 'line') return;
+                const pointer = fCanvas.getPointer(o.e);
+                activeLineObj.set({ x2: pointer.x, y2: pointer.y });
+                fCanvas.renderAll();
+            });
+
+            fCanvas.on('mouse:up', function() {
+                if (activeTool !== 'line') return;
+                isDrawingLine = false;
+                if (activeLineObj) activeLineObj.setCoords();
+                fCanvas.renderAll(); saveCanvasState();
+            });
+        }
+
+        function bindDimLineTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'dim-line') return;
+                isDrawingLine = true;
+                const pointer = fCanvas.getPointer(o.e);
+                startX = pointer.x; startY = pointer.y;
+                const z = fCanvas.getZoom();
+
+                activeLineObj = new fabric.Line([startX, startY, startX, startY], {
+                    strokeWidth: 3 / z, stroke: '#00E5FF', strokeDashArray: [5 / z, 5 / z], originX: 'center', originY: 'center', selectable: false, hasControls: false
+                });
+                fCanvas.add(activeLineObj);
+            });
+
+            fCanvas.on('mouse:move', function(o) {
+                if (!isDrawingLine || activeTool !== 'dim-line') return;
+                const pointer = fCanvas.getPointer(o.e);
+                activeLineObj.set({ x2: pointer.x, y2: pointer.y });
+                fCanvas.renderAll();
+            });
+
+            fCanvas.on('mouse:up', function() {
+                if (activeTool !== 'dim-line') return;
+                isDrawingLine = false;
+                if (activeLineObj) {
+                    activeLineObj.setCoords();
+                    const x1 = activeLineObj.x1, y1 = activeLineObj.y1, x2 = activeLineObj.x2, y2 = activeLineObj.y2;
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    const z = fCanvas.getZoom();
+                    const arrowSize = 12 / z;
+
+                    const arrow1 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#00E5FF', left: x1, top: y1, originX: 'center', originY: 'center', angle: angle - 90, selectable: false });
+                    const arrow2 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#00E5FF', left: x2, top: y2, originX: 'center', originY: 'center', angle: angle + 90, selectable: false });
+                    
+                    fCanvas.add(arrow1, arrow2);
+                }
+                fCanvas.renderAll(); saveCanvasState();
+            });
+        }
+
+        function bindTextTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'text') return;
+                const target = fCanvas.findTarget(o.e);
+                if (target && (target.type === 'i-text' || target.type === 'text' || target.type === 'group')) return;
+
+                const pointer = fCanvas.getPointer(o.e);
+                const z = fCanvas.getZoom();
+                const mmText = new fabric.IText('Text', {
+                    left: pointer.x, top: pointer.y, fontFamily: 'Inter', fontSize: 20 / z,
+                    fill: '#00E5FF', fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 6 / z, cornerSize: 8 / z, transparentCorners: false, hasControls: true
+                });
+                fCanvas.add(mmText);
+                fCanvas.setActiveObject(mmText);
+                fCanvas.renderAll(); saveCanvasState();
+            });
+        }
+
+        lockBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); });
+        freehandBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('freehand'); });
+        highlightBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('highlight'); });
+        lineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('line'); });
+        dimLineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('dim-line'); });
+        textBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('text'); });
+        calibrateBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); });
+
+        undoBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const objects = fCanvas.getObjects();
+            if (objects.length > 0) {
+                const lastObj = objects[objects.length - 1];
+                if (lastObj.type === 'triangle') {
+                    fCanvas.remove(objects[objects.length - 1]); 
+                    fCanvas.remove(objects[objects.length - 2]); 
+                    fCanvas.remove(objects[objects.length - 3]); 
+                } else {
+                    fCanvas.remove(lastObj);
+                }
+                fCanvas.renderAll(); saveCanvasState();
+            }
         });
 
-        fCanvas.on('mouse:move', function(opt) { 
-            if (isPanning && activeTool === 'locked') { let e = opt.e; let currentX = e.clientX || (e.touches && e.touches[0].clientX); let currentY = e.clientY || (e.touches && e.touches[0].clientY); if (currentX && currentY && lastPanX && lastPanY) { let vpt = fCanvas.viewportTransform; vpt[4] += currentX - lastPanX; vpt[5] += currentY - lastPanY; fCanvas.requestRenderAll(); lastPanX = currentX; lastPanY = currentY; } return; } 
-            if (isDrawingLine) { const pointer = updateLoupe(opt); if (lineStep === 1 && activeLineObj) { activeLineObj.set({ x2: pointer.x, y2: pointer.y }); fCanvas.renderAll(); } } 
+        clearBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            fCanvas.clear();
+            fCanvas.setBackgroundImage(null, fCanvas.renderAll.bind(fCanvas));
+            fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+            if (fileInput) fileInput.value = '';
+            setButtonState('locked'); saveCanvasState();
         });
 
-        fCanvas.on('mouse:up', function(opt) { 
-            if (isPanning) { isPanning = false; fCanvas.setViewportTransform(fCanvas.viewportTransform); return; } 
-            if (isDrawingLine) { 
-                isDrawingLine = false; loupeEl.style.display = 'none'; 
-                if (lineStep === 0) { 
-                    lineStep = 1; const pointer = fCanvas.getPointer(opt.e); 
-                    tempMarker = new fabric.Circle({ radius: 4/fCanvas.getZoom(), fill: '#00E5FF', left: pointer.x, top: pointer.y, originX: 'center', originY: 'center', selectable: false, evented: false }); 
-                    fCanvas.add(tempMarker); fCanvas.renderAll(); 
-                } else if (lineStep === 1) { 
-                    lineStep = 0; if (tempMarker) { fCanvas.remove(tempMarker); tempMarker = null; } 
-                    if (activeLineObj) { 
-                        activeLineObj.setCoords(); const z = fCanvas.getZoom(); 
-                        if (activeTool === 'dim-line') { 
-                            const x1 = activeLineObj.x1, y1 = activeLineObj.y1, x2 = activeLineObj.x2, y2 = activeLineObj.y2; 
-                            const dx = x2 - x1; const dy = y2 - y1; const pixelLength = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx) * 180 / Math.PI; const arrowSize = 12 / z; 
-                            const arrow1 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#00E5FF', left: x1, top: y1, originX: 'center', originY: 'center', angle: angle - 90, selectable: false }); 
-                            const arrow2 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#00E5FF', left: x2, top: y2, originX: 'center', originY: 'center', angle: angle + 90, selectable: false }); 
-                            fCanvas.add(arrow1, arrow2); 
-                            if (scaleRatio) { 
-                                const calculatedMm = Math.round(pixelLength * scaleRatio); const midX = (x1 + x2) / 2; const midY = (y1 + y2) / 2; 
-                                const textObj = new fabric.IText(calculatedMm + ' mm', { left: midX, top: midY, fontFamily: 'Inter', fontSize: 20 / z, fill: '#fff', fontWeight: 'bold', backgroundColor: 'rgba(0,229,255,0.2)', padding: 6 / z, cornerSize: 8 / z, originX: 'center', originY: 'center', transparentCorners: false, hasControls: true }); 
-                                fCanvas.add(textObj); 
-                            } 
-                        } else if (activeTool === 'calibrate') { 
-                            const dx = activeLineObj.x2 - activeLineObj.x1; const dy = activeLineObj.y2 - activeLineObj.y1; const pixelLength = Math.sqrt(dx * dx + dy * dy); fCanvas.remove(activeLineObj); 
-                            if (pixelLength > 10) { const actualSize = prompt("Enter real-world size in mm:"); if (actualSize && !isNaN(actualSize) && actualSize > 0) { scaleRatio = parseFloat(actualSize) / pixelLength; } } 
-                            setButtonState('locked'); 
-                        } 
-                    } 
-                    activeLineObj = null; fCanvas.renderAll(); saveCanvasState(); 
-                } 
-            } 
+        maximizeBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isFull = group.classList.toggle('fullscreen-mode');
+            fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+
+            if (isFull) {
+                maximizeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+                fCanvas.setDimensions({ width: window.innerWidth - 40, height: window.innerHeight - 140 });
+            } else {
+                maximizeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+                const currentBg = fCanvas.backgroundImage;
+                if (currentBg) {
+                    const imgRatio = currentBg.height / currentBg.width;
+                    const maxWidth = group.querySelector('.canvas-container').clientWidth || 600;
+                    const dynamicHeight = maxWidth * imgRatio;
+                    fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight });
+                } else {
+                    fCanvas.setDimensions({ width: 600, height: 400 });
+                }
+            }
+            setTimeout(() => { fCanvas.calcOffset(); fCanvas.renderAll(); }, 100);
         });
 
-        canvasContainer.addEventListener('touchstart', function(e) { if (e.touches.length === 2) { isPinching = true; isPanning = false; fCanvas.isDrawingMode = false; lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, { passive: false }); canvasContainer.addEventListener('touchmove', function(e) { if (isPinching && e.touches.length === 2) { e.preventDefault(); let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); let zoom = fCanvas.getZoom(); zoom *= (currentDist / lastPinchDist); if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5; let rect = canvasContainer.getBoundingClientRect(); let pinchCenterX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left; let pinchCenterY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top; fCanvas.zoomToPoint({ x: pinchCenterX, y: pinchCenterY }, zoom); lastPinchDist = currentDist; } }, { passive: false }); canvasContainer.addEventListener('touchend', function(e) { if (isPinching && e.touches.length < 2) { isPinching = false; if (activeTool === 'freehand' || activeTool === 'highlight') fCanvas.isDrawingMode = true; } });
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (!e.target.files || e.target.files.length === 0) return;
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(f) {
+                    const nativeImg = new Image();
+                    nativeImg.onload = function() {
+                        fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+                        const imgRatio = nativeImg.height / nativeImg.width;
+                        const maxWidth = group.querySelector('.canvas-container').clientWidth || 600;
+                        const dynamicHeight = maxWidth * imgRatio;
 
-        function setButtonState(tool) { lineStep = 0; if (tempMarker) { fCanvas.remove(tempMarker); tempMarker = null; } if (activeLineObj) { fCanvas.remove(activeLineObj); activeLineObj = null; } activeTool = tool; const currentZoom = fCanvas.getZoom(); lockBtn?.classList.toggle('canvas-locked', tool === 'locked'); if (lockBtn) lockBtn.innerHTML = (tool === 'locked') ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>'; calibrateBtn?.classList.toggle('active', tool === 'calibrate'); freehandBtn?.classList.toggle('active', tool === 'freehand'); highlightBtn?.classList.toggle('active', tool === 'highlight'); lineBtn?.classList.toggle('active', tool === 'line'); dimLineBtn?.classList.toggle('active', tool === 'dim-line'); textBtn?.classList.toggle('active', tool === 'text'); fCanvas.isDrawingMode = (tool === 'freehand' || tool === 'highlight'); if (tool === 'freehand') { fCanvas.freeDrawingBrush.color = '#00E5FF'; fCanvas.freeDrawingBrush.width = 4 / currentZoom; } else if (tool === 'highlight') { fCanvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.3)'; fCanvas.freeDrawingBrush.width = 25 / currentZoom; } fCanvas.selection = (tool === 'text' || tool === 'locked'); fCanvas.allowTouchScrolling = (tool === 'locked' || tool === 'text'); fCanvas.getObjects().forEach(obj => { obj.selectable = (tool === 'text'); obj.editable = (tool === 'text'); }); fCanvas.discardActiveObject(); fCanvas.calcOffset(); fCanvas.renderAll(); }
-        lockBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); }); calibrateBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('calibrate'); }); freehandBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('freehand'); }); highlightBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('highlight'); }); lineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('line'); }); dimLineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('dim-line'); }); textBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('text'); }); undoBtn?.addEventListener('click', (e) => { e.preventDefault(); const objects = fCanvas.getObjects(); if (objects.length > 0) { const lastObj = objects[objects.length - 1]; let itemsToRemove = 1; if (lastObj.type === 'i-text' && objects.length >= 4) { const obj4 = objects[objects.length - 4]; if (obj4 && obj4.type === 'line') itemsToRemove = 4; } else if (lastObj.type === 'triangle' && objects.length >= 3) { itemsToRemove = 3; } for(let i=0; i<itemsToRemove; i++) { fCanvas.remove(objects[objects.length - 1 - i]); } fCanvas.renderAll(); saveCanvasState(); } }); clearBtn?.addEventListener('click', (e) => { e.preventDefault(); fCanvas.clear(); fCanvas.setBackgroundImage(null, fCanvas.renderAll.bind(fCanvas)); fCanvas.setViewportTransform([1,0,0,1,0,0]); scaleRatio = null; if (fileInput) fileInput.value = ''; setButtonState('locked'); saveCanvasState(); });
-        maximizeBtn?.addEventListener('click', (e) => { e.preventDefault(); const isFull = group.classList.toggle('fullscreen-mode'); fCanvas.setViewportTransform([1,0,0,1,0,0]); if (isFull) { fCanvas.setDimensions({ width: window.innerWidth - 40, height: window.innerHeight - 140 }); maximizeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>'; } else { maximizeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>'; const currentBg = fCanvas.backgroundImage; if (currentBg) { const imgRatio = currentBg.height / currentBg.width; const maxWidth = group.querySelector('.canvas-container').clientWidth || 600; const dynamicHeight = maxWidth * imgRatio; fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight }); } else { fCanvas.setDimensions({ width: 600, height: 400 }); } } setTimeout(() => { fCanvas.calcOffset(); fCanvas.renderAll(); }, 100); });
-        
-        if (fileInput) { fileInput.addEventListener('change', function(e) { if (!e.target.files || e.target.files.length === 0) return; const label = fileInput.nextElementSibling; label.style.borderColor = "#00E5FF"; label.style.color = "#00E5FF"; const file = e.target.files[0]; const reader = new FileReader(); reader.onload = function(f) { const nativeImg = new Image(); nativeImg.onload = function() { const MAX_WIDTH = 1200; let width = nativeImg.width; let height = nativeImg.height; if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; } const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height; const ctx = tempCanvas.getContext('2d'); ctx.drawImage(nativeImg, 0, 0, width, height); const safeDataUrl = tempCanvas.toDataURL('image/jpeg', 0.8); fCanvas.setViewportTransform([1,0,0,1,0,0]); fabric.Image.fromURL(safeDataUrl, function(fabricImg) { const imgRatio = fabricImg.height / fabricImg.width; const maxWidth = group.querySelector('.canvas-container').clientWidth || 600; const dynamicHeight = maxWidth * imgRatio; fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight }); const scale = Math.min(fCanvas.width / fabricImg.width, fCanvas.height / fabricImg.height); fabricImg.set({ originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, left: fCanvas.width / 2, top: fCanvas.height / 2, selectable: false }); fCanvas.setBackgroundImage(fabricImg, () => { fCanvas.calcOffset(); fCanvas.renderAll(); saveCanvasState(); }); }); }; nativeImg.src = f.target.result; }; reader.readAsDataURL(file); }); }
+                        fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight });
+                        const fabricImg = new fabric.Image(nativeImg);
+                        const scale = Math.min(fCanvas.width / fabricImg.width, fCanvas.height / fabricImg.height);
+
+                        fabricImg.set({ 
+                            originX: 'center', originY: 'center', 
+                            scaleX: scale, scaleY: scale, 
+                            left: fCanvas.width / 2, top: fCanvas.height / 2, 
+                            selectable: false
+                        });
+
+                        fCanvas.setBackgroundImage(fabricImg, () => {
+                            fCanvas.calcOffset();
+                            fCanvas.renderAll();
+                            saveCanvasState();
+                        });
+                    };
+                    nativeImg.src = f.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
     });
 
-    // --- PDF GENERATION ENGINE & MEMORY FIX ---
-    
+    // --- SECURE LOGO CONVERTER ---
+    async function applySafeLogo(template, logoUrl) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    const b64 = canvas.toDataURL('image/png');
+                    template.querySelectorAll('.brand-logo-img').forEach(el => {
+                        el.src = b64; el.style.display = 'inline-block';
+                    });
+                    resolve();
+                } catch(e) {
+                    template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none');
+                    resolve();
+                }
+            };
+            img.onerror = function() {
+                template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none');
+                resolve();
+            };
+            img.src = logoUrl;
+        });
+    }
+
+    // --- JPEG PAMPHLET INJECTOR ---
+    async function loadPamphletImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = () => { resolve(null); };
+            img.src = url;
+        });
+    }
+
+    // --- PHOTO POPULATION ENGINE ---
+    async function populatePdfImageGrid(inputId, gridId) {
+        const input = document.getElementById(inputId);
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        grid.innerHTML = ''; 
+        if (input && input.files && input.files.length > 0) {
+            for (let i = 0; i < input.files.length; i++) {
+                const file = input.files[i];
+                const dataUrl = await new Promise(res => {
+                    const reader = new FileReader();
+                    reader.onload = e => res(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+                const img = document.createElement('img');
+                img.src = dataUrl;
+                img.style.width = '100%';
+                img.style.maxHeight = '250px';
+                img.style.objectFit = 'contain';
+                img.style.border = '1px solid #dee2e6';
+                img.style.borderRadius = '4px';
+                grid.appendChild(img);
+            }
+        }
+    }
+
+    // --- UI LOADING SCREEN ---
     function showPdfLoader(text) {
         let loader = document.getElementById('pdfLoadingOverlay');
         if(!loader) {
@@ -167,104 +514,246 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function hidePdfLoader() { const loader = document.getElementById('pdfLoadingOverlay'); if(loader) loader.style.display = 'none'; }
 
-    async function applySafeLogo(template, logoUrl) { return new Promise((resolve) => { const img = new Image(); img.crossOrigin = "Anonymous"; img.onload = function() { try { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); const b64 = canvas.toDataURL('image/png'); template.querySelectorAll('.brand-logo-img').forEach(el => { el.src = b64; el.style.display = 'inline-block'; }); resolve(); } catch(e) { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); } }; img.onerror = function() { template.querySelectorAll('.brand-logo-img').forEach(el => el.style.display = 'none'); resolve(); }; img.src = logoUrl; }); }
-    async function loadPamphletImage(url) { return new Promise((resolve) => { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.8)); }; img.onerror = () => { resolve(null); }; img.src = url; }); }
-    async function populatePdfImageGrid(inputId, gridId) { const input = document.getElementById(inputId); const grid = document.getElementById(gridId); if (!grid) return; grid.innerHTML = ''; if (input && input.files && input.files.length > 0) { for (let i = 0; i < input.files.length; i++) { const file = input.files[i]; const dataUrl = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); }); const img = document.createElement('img'); img.src = dataUrl; img.style.width = '100%'; img.style.maxHeight = '250px'; img.style.objectFit = 'contain'; img.style.border = '1px solid #dee2e6'; img.style.borderRadius = '4px'; grid.appendChild(img); } } }
+    // --- EXACT PDF GENERATOR FROM STABLE, ADAPTED TO CURRENT CSS ---
+    async function executeSecurePDFGeneration(templateId, fileName, data) {
+        showPdfLoader("Processing Document...");
 
+        const template = document.getElementById(templateId);
+        const mainApp = document.querySelector('main') || document.body.firstElementChild; 
+
+        template.style.display = 'block';
+        template.style.position = 'absolute';
+        template.style.top = '0'; template.style.left = '0'; template.style.width = '800px';
+        template.style.zIndex = '999999'; template.style.backgroundColor = '#ffffff';
+        mainApp.style.display = 'none'; // Critical for iOS rendering
+        window.scrollTo(0, 0);
+
+        try {
+            await new Promise(r => setTimeout(r, 800)); // Paint delay
+            
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const margin = 10;
+            const pdfPrintWidth = doc.internal.pageSize.getWidth() - (margin * 2);
+            const pdfFullWidth = doc.internal.pageSize.getWidth();
+            const pdfFullHeight = doc.internal.pageSize.getHeight();
+
+            if (templateId === 'pdfTemplateInternal') {
+                let pages = Array.from(template.querySelectorAll('.pdf-page')).filter(el => window.getComputedStyle(el).display !== 'none');
+
+                for(let i = 0; i < pages.length; i++) {
+                    showPdfLoader(`Printing Page ${i+1}/${pages.length}...`);
+                    const canvas = await html2canvas(pages[i], {
+                        scale: 1.5, useCORS: true, allowTaint: false, windowWidth: 800, logging: false, backgroundColor: '#ffffff'
+                    });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const ratio = canvas.height / canvas.width;
+                    if (i > 0) doc.addPage();
+                    doc.addImage(imgData, 'JPEG', margin, margin, pdfPrintWidth, pdfPrintWidth * ratio);
+                    canvas.width = 0; canvas.height = 0; 
+                }
+                
+            } else if (templateId === 'pdfTemplateCustomer') {
+                showPdfLoader(`Printing Cover Letter...`);
+                
+                let pages = Array.from(template.querySelectorAll('.pdf-page')).filter(el => window.getComputedStyle(el).display !== 'none');
+                const canvas = await html2canvas(pages[0], {
+                    scale: 1.5, useCORS: true, allowTaint: false, windowWidth: 800, logging: false, backgroundColor: '#ffffff'
+                });
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const ratio = canvas.height / canvas.width;
+                doc.addImage(imgData, 'JPEG', margin, margin, pdfPrintWidth, pdfPrintWidth * ratio);
+
+                showPdfLoader("Stitching Pamphlets...");
+                
+                const pagesToAppend = [
+                    'pamphlet-who-we-are.jpg',
+                    'pamphlet-why-choose-us.jpg',
+                    'pamphlet-journey.jpg',
+                    'pamphlet-tailored.jpg',
+                    'pamphlet-piling.jpg'
+                ];
+
+                if (data.weepVents === 'Yes') pagesToAppend.push('pamphlet-protecting-home.jpg');
+                if (data.roofType === 'Ultra380') pagesToAppend.push('pamphlet-ultra380.jpg');
+                if (data.roofType === 'LivinRoof') pagesToAppend.push('pamphlet-livinroof.jpg');
+                if (data.roofType === 'Glass Roof') pagesToAppend.push('pamphlet-glass-roof.jpg');
+                if (data.roofType === 'Flat Roof') pagesToAppend.push('pamphlet-flat-roof.jpg');
+                if (data.sapCalcs === 'Yes') pagesToAppend.push('pamphlet-sap-calcs.jpg');
+                if (data.planningPerms === 'Full Planning' || data.planningPerms === 'Pre Approved Planning') {
+                    pagesToAppend.push('pamphlet-planning.jpg');
+                }
+
+                for (const filename of pagesToAppend) {
+                    const img = await loadPamphletImage(filename);
+                    if (img) { 
+                        doc.addPage(); 
+                        doc.addImage(img, 'JPEG', 0, 0, pdfFullWidth, pdfFullHeight); 
+                    }
+                }
+            }
+            
+            doc.save(fileName);
+
+        } catch (error) {
+            console.error("CAPTURE FAILED:", error);
+            alert("Capture Failed: " + error.message);
+        } finally {
+            template.style.display = 'none'; template.style.position = ''; mainApp.style.display = 'block';
+            hidePdfLoader();
+        }
+    }
+
+    // --- DATA BINDING ---
     function getSurveyData() {
-        const dName = document.getElementById('designerSelect')?.value || "Surveyor"; const selectedBrand = document.getElementById('brandSelect')?.value || "CO Home Improvements";
-        const profiles = window.designerProfiles || {}; const logos = window.brandLogos || {}; const profile = profiles[dName] || { phone: "", email: "" };
+        const dName = document.getElementById('designerSelect')?.value || "Surveyor";
+        const selectedBrand = document.getElementById('brandSelect')?.value || "CO Home Improvements";
+        const profiles = window.designerProfiles || {};
+        const logos = window.brandLogos || {};
+        const profile = profiles[dName] || { phone: "", email: "" };
+
         return {
-            clientName: document.getElementById('clientName')?.value || 'Customer', clientNum: document.getElementById('clientNum')?.value || '', address: document.getElementById('postCode')?.value || '', date: document.getElementById('apptDate')?.value ? new Date(document.getElementById('apptDate').value).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'), revisitDate: document.getElementById('revisitDate')?.value ? new Date(document.getElementById('revisitDate').value).toLocaleDateString('en-GB') : '', revisitLocation: document.getElementById('revisitLocation')?.value || '', buildType: document.getElementById('buildType')?.value || '', roofType: document.getElementById('roofType')?.value || '', proposedSize: document.getElementById('proposedSize')?.value || '', frameColour: document.getElementById('frameColour')?.value || '', newBuildMaterial: document.getElementById('newBuildMaterial')?.value || '', planningPerms: document.getElementById('planningPerms')?.value || '', buildingRegs: document.getElementById('buildingRegs')?.value || '', sapCalcs: document.getElementById('sapCalcs')?.value || '', weepVents: document.getElementById('weepventsExist')?.value || '', designerName: dName, designerPhone: profile.phone, designerEmail: profile.email, logoSource: logos[selectedBrand] || "logo.jpg"
+            clientName: document.getElementById('clientName')?.value || 'Customer',
+            clientNum: document.getElementById('clientNum')?.value || '',
+            address: document.getElementById('postCode')?.value || '',
+            date: document.getElementById('apptDate')?.value ? new Date(document.getElementById('apptDate').value).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+            revisitDate: document.getElementById('revisitDate')?.value ? new Date(document.getElementById('revisitDate').value).toLocaleDateString('en-GB') : '',
+            revisitLocation: document.getElementById('revisitLocation')?.value || '',
+            buildType: document.getElementById('buildType')?.value || '',
+            roofType: document.getElementById('roofType')?.value || '',
+            proposedSize: document.getElementById('proposedSize')?.value || '',
+            frameColour: document.getElementById('frameColour')?.value || '',
+            newBuildMaterial: document.getElementById('newBuildMaterial')?.value || '',
+            planningPerms: document.getElementById('planningPerms')?.value || '',
+            buildingRegs: document.getElementById('buildingRegs')?.value || '',
+            sapCalcs: document.getElementById('sapCalcs')?.value || '',
+            weepVents: document.getElementById('weepventsExist')?.value || '',
+            designerName: dName, 
+            designerPhone: profile.phone, 
+            designerEmail: profile.email,
+            logoSource: logos[selectedBrand] || "logo.jpg"
         };
     }
 
-    async function renderPdfFields(data) {
-        const fields = ['BuildType', 'RoofType', 'ProposedSize', 'FrameColour', 'HouseMaterial', 'DpcDepth', 'FasciaHeight', 'AirBricks', 'BuildingRegs', 'PlanningPerms', 'SapCalcs', 'Budget', 'AccessDifficult', 'AccessWidth', 'WallObstacles', 'DesignerNotes', 'MiscNotes'];
-        fields.forEach(key => { const inputEl = document.getElementById(key.charAt(0).toLowerCase() + key.slice(1)); const textEl = document.getElementById(`pdf${key}`); if (inputEl && textEl) textEl.innerText = inputEl.value; });
-        document.querySelectorAll('.bind-name').forEach(el => el.innerText = data.clientName); document.querySelectorAll('.bind-num').forEach(el => el.innerText = data.clientNum); document.querySelectorAll('.bind-address').forEach(el => el.innerText = data.address); document.querySelectorAll('.bind-date').forEach(el => el.innerText = data.date);
-        const designerEl = document.getElementById('pdfPrintDesigner'); if (designerEl) designerEl.innerText = data.designerName;
-        
-        ['frontelevation', 'sideelevation', 'rearelevation', 'housematerialphoto', 'manhole', 'weepvents', 'rwpsvp', 'treelocations', 'designersketch'].forEach(id => {
-            const fCanvas = window.appCanvases[id]; const imgTag = document.getElementById(`pdfImgInternal-${id}`);
-            // Lowered quality to 0.6 to prevent Safari memory panic during HTML2Canvas
-            if (fCanvas && imgTag) { fCanvas.setViewportTransform([1,0,0,1,0,0]); fCanvas.discardActiveObject(); fCanvas.renderAll(); imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.6 }); }
-        });
-        await populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid'); await populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
-    }
-
-    // --- FIX: SAFE MEMORY PDF EXPORT ---
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async function() {
-        window.scrollTo(0, 0); 
-        const data = getSurveyData(); const template = document.getElementById('pdfTemplateInternal');
-        showPdfLoader("Rendering blueprint data...");
-        
-        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0px'; template.style.left = '0px'; template.style.zIndex = '9998'; 
-        
-        await applySafeLogo(template, data.logoSource); await renderPdfFields(data);
-        await new Promise(r => setTimeout(r, 2000)); 
+        const btn = this; const originalText = btn.innerText; btn.disabled = true;
+        const data = getSurveyData();
+        const template = document.getElementById('pdfTemplateInternal');
 
         try {
-            let pages = Array.from(template.querySelectorAll('.pdf-page'));
-            for(let i = 0; i < pages.length; i++) {
-                showPdfLoader(`Exporting Part ${i+1} of ${pages.length}...`);
-                const singleDoc = new jsPDF('p', 'mm', 'a4');
-                
-                // SCALE 1 IS CRITICAL: iPad Safari crashes on scale 2 during heavy multi-page exports
-                const canvas = await html2canvas(pages[i], { scale: 1, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
-                
-                const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                const imgProps = singleDoc.getImageProperties(imgData);
-                const pdfWidth = singleDoc.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                
-                singleDoc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-                singleDoc.save(`${data.clientName.trim().split(' ').pop() || 'Survey'}_Part_${i+1}.pdf`);
-                await new Promise(r => setTimeout(r, 600)); 
-            }
-        } catch (e) { alert("Capture Failed: " + e.message); } 
-        finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
+            await applySafeLogo(template, data.logoSource);
+
+            template.querySelectorAll('.bind-name').forEach(el => el.innerText = data.clientName);
+            template.querySelectorAll('.bind-num').forEach(el => el.innerText = data.clientNum);
+            template.querySelectorAll('.bind-address').forEach(el => el.innerText = data.address);
+            template.querySelectorAll('.bind-date').forEach(el => el.innerText = data.date);
+
+            const designerEl = document.getElementById('pdfPrintDesigner');
+            if (designerEl) designerEl.innerText = data.designerName;
+
+            ['BuildType', 'RoofType', 'ProposedSize', 'FrameColour', 'HouseMaterial', 'DpcDepth', 'FasciaHeight', 'AirBricks', 'BuildingRegs', 'PlanningPerms', 'SapCalcs', 'Budget', 'AccessDifficult', 'AccessWidth', 'WallObstacles', 'DesignerNotes', 'MiscNotes'].forEach(key => {
+                const inputEl = document.getElementById(key.charAt(0).toLowerCase() + key.slice(1));
+                const textEl = document.getElementById(`pdf${key}`);
+                if (inputEl && textEl) textEl.innerText = inputEl.value;
+            });
+
+            await populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid');
+            await populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
+
+            ['frontelevation', 'sideelevation', 'rearelevation', 'housematerialphoto', 'manhole', 'weepvents', 'rwpsvp', 'treelocations', 'designersketch'].forEach(id => {
+                const fCanvas = window.appCanvases[id];
+                const imgTag = document.getElementById(`pdfImgInternal-${id}`);
+                if (fCanvas && imgTag) { 
+                    fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+                    fCanvas.discardActiveObject(); 
+                    fCanvas.renderAll(); 
+                    imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.9 }); 
+                }
+            });
+        } catch (e) {}
+
+        const surname = data.clientName.trim().split(' ').pop() || 'Customer';
+        await executeSecurePDFGeneration('pdfTemplateInternal', `${surname}_Internal_Survey.pdf`, data);
+        btn.innerText = originalText; btn.disabled = false;
     });
 
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
-        window.scrollTo(0, 0);
-        const data = getSurveyData(); const template = document.getElementById('pdfTemplateCustomer');
-        showPdfLoader("Compiling Customer Pack...");
-        
-        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0px'; template.style.left = '0px'; template.style.zIndex = '9998';
-        
-        await applySafeLogo(template, data.logoSource);
-        const firstName = data.clientName.split(' ')[0] || 'Customer';
-        document.getElementById('lp-greeting').innerHTML = `Hi ${firstName},<br><br>I want to say a massive thank you for inviting me into your home today. I've put together this summary document outlining the major talking points from our appointment.`;
-        document.getElementById('lp-size').innerText = data.buildType && data.proposedSize ? `As discussed, we are proposing a beautiful new ${data.buildType} measuring approximately ${data.proposedSize}mm.` : `As discussed, we are proposing a beautiful new ${data.buildType}.`;
-        document.getElementById('lp-roof').innerText = data.roofType ? `To perfectly complement the build, we discussed incorporating a premium ${data.roofType} system.` : `We have yet to decide on the final roof style.`;
-        document.getElementById('lp-frame').innerText = data.frameColour ? `We agreed that the window and door frames will look fantastic finished in an elegant ${data.frameColour} colourway.` : `We haven't narrowed down the final frame colour just yet.`;
-        document.getElementById('lp-revisit').innerText = data.revisitDate ? `I look forward to our next catch-up scheduled for ${data.revisitDate}.` : `We haven't booked in a date for our next catch-up just yet.`;
-        document.getElementById('lp-designer-name').innerText = data.designerName; document.getElementById('lp-designer-contact').innerText = `${data.designerPhone} | ${data.designerEmail}`;
-        
-        await new Promise(r => setTimeout(r, 2000)); 
+        const btn = this; const originalText = btn.innerText; btn.disabled = true;
+        const data = getSurveyData();
+        const template = document.getElementById('pdfTemplateCustomer');
 
         try {
-            showPdfLoader("Stitching Pamphlets...");
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const pageEl = template.querySelector('.pdf-page');
-            
-            // Scaled down to prevent iOS RAM panic
-            const canvas = await html2canvas(pageEl, { scale: 1, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
-            
-            const imgData = canvas.toDataURL('image/jpeg', 0.85);
-            const imgProps = doc.getImageProperties(imgData);
-            const pdfWidth = doc.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            
-            const pagesToAppend = ['pamphlet-who-we-are.jpg', 'pamphlet-why-choose-us.jpg', 'pamphlet-journey.jpg', 'pamphlet-tailored.jpg', 'pamphlet-piling.jpg'];
-            if (data.weepVents === 'Yes') pagesToAppend.push('pamphlet-protecting-home.jpg'); if (data.roofType === 'Ultra380') pagesToAppend.push('pamphlet-ultra380.jpg'); if (data.roofType === 'LivinRoof') pagesToAppend.push('pamphlet-livinroof.jpg'); if (data.roofType === 'Glass Roof') pagesToAppend.push('pamphlet-glass-roof.jpg'); if (data.roofType === 'Flat Roof') pagesToAppend.push('pamphlet-flat-roof.jpg'); if (data.sapCalcs === 'Yes') pagesToAppend.push('pamphlet-sap-calcs.jpg'); if (data.planningPerms === 'Full Planning' || data.planningPerms === 'Pre Approved Planning') pagesToAppend.push('pamphlet-planning.jpg');
-            
-            for (const filename of pagesToAppend) { const img = await loadPamphletImage(filename); if (img) { doc.addPage(); doc.addImage(img, 'JPEG', 0, 0, pdfWidth, doc.internal.pageSize.getHeight()); } }
-            
-            doc.save(`${data.clientName.trim().split(' ').pop() || 'Customer'}_Design.pdf`);
-        } catch (e) { alert("Capture Failed: " + e.message); } 
-        finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
+            await applySafeLogo(template, data.logoSource);
+
+            const firstName = data.clientName.split(' ')[0] || 'Customer';
+            const greetingEl = document.getElementById('lp-greeting');
+            if (greetingEl) {
+                greetingEl.innerHTML = `Hi ${firstName},<br><br>I want to say a massive thank you for inviting me into your home today. I've put together this summary document outlining the major talking points from our appointment.`;
+            }
+
+            const sizeEl = document.getElementById('lp-size');
+            if (sizeEl) {
+                if (data.buildType && data.proposedSize) {
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType} measuring approximately ${data.proposedSize}mm.`;
+                } else if (data.buildType) {
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType}.`;
+                } else {
+                    sizeEl.innerText = `We didn't quite pinpoint the exact dimensions of your build just yet, which is absolutely fine.`;
+                }
+            }
+
+            const roofEl = document.getElementById('lp-roof');
+            if (roofEl) {
+                if (data.roofType) {
+                    roofEl.innerText = `To perfectly complement the build, we discussed incorporating a premium ${data.roofType} system.`;
+                } else {
+                    roofEl.innerText = `We have yet to decide on the final roof style.`;
+                }
+            }
+
+            const frameEl = document.getElementById('lp-frame');
+            if (frameEl) {
+                if (data.frameColour) {
+                    frameEl.innerText = `We agreed that the window and door frames will look fantastic finished in an elegant ${data.frameColour} colourway.`;
+                } else {
+                    frameEl.innerText = `We haven't narrowed down the final frame colour just yet.`;
+                }
+            }
+
+            const complianceEl = document.getElementById('lp-compliance');
+            if (complianceEl) {
+                const needsPlanning = (data.planningPerms === 'Full Planning' || data.planningPerms === 'Pre Approved Planning');
+                const needsRegs = (data.buildingRegs === 'Yes');
+                const needsSap = (data.sapCalcs === 'Yes');
+
+                if (!needsPlanning && !needsRegs && !needsSap) {
+                    complianceEl.innerText = `Based on your choices, it looks like we do not need Planning Permission, we do not need Building Regulations, and we do not need SAP calculations.`;
+                } else {
+                    let reqs = [];
+                    if (needsPlanning) reqs.push(data.planningPerms);
+                    if (needsRegs) reqs.push("Building Regulations");
+                    if (needsSap) reqs.push("SAP Calculations");
+
+                    const reqString = reqs.join(', ').replace(/, ([^,]*)$/, ' and $1');
+                    complianceEl.innerText = `Regarding compliance, based on our discussion your project will require ${reqString}.`;
+                }
+            }
+
+            const revisitEl = document.getElementById('lp-revisit');
+            if (revisitEl) {
+                if (data.revisitDate) {
+                    revisitEl.innerText = `I look forward to our next catch-up scheduled for ${data.revisitDate}.`;
+                } else {
+                    revisitEl.innerText = `We haven't booked in a date for our next catch-up just yet.`;
+                }
+            }
+
+            const nameEl = document.getElementById('lp-designer-name'); if(nameEl) nameEl.innerText = data.designerName;
+            const contactEl = document.getElementById('lp-designer-contact'); if(contactEl) contactEl.innerText = `${data.designerPhone} | ${data.designerEmail}`;
+
+        } catch (e) {}
+
+        const surname = data.clientName.trim().split(' ').pop() || 'Customer';
+        await executeSecurePDFGeneration('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`, data);
+        btn.innerText = originalText; btn.disabled = false;
     });
 });
