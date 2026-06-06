@@ -753,3 +753,4 @@ document.addEventListener('DOMContentLoaded', function() {
         await executeSecurePDFGeneration('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`, this, data);
     });
 });
+
