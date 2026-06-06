@@ -1,41 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Stable Core Engine)");
-
-    // --- LUXURY OS UI UPGRADES ---
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('Service Worker Error', err)); }
-
-    setTimeout(() => { 
-        const splash = document.getElementById('splashScreen'); 
-        if(splash) { 
-            splash.style.opacity = '0'; 
-            setTimeout(() => splash.style.display = 'none', 600); 
-        } 
-    }, 1800); 
-
-    window.addEventListener('scroll', () => { 
-        const header = document.getElementById('mainHeader'); 
-        if(header) {
-            if(window.scrollY > 20) header.classList.add('shrunk'); 
-            else header.classList.remove('shrunk'); 
-        }
-    });
-
-    function evaluateConditionals() {
-        document.querySelectorAll('.conditional-field').forEach(field => {
-            const conditionId = field.getAttribute('data-condition'); 
-            const selectEl = document.getElementById(conditionId);
-            if(selectEl) { 
-                if(selectEl.value === 'Yes') field.classList.add('visible'); 
-                else field.classList.remove('visible'); 
-            }
-        });
-    }
-    document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', evaluateConditionals));
-
-
-    // --- 1. PROFILE MANAGER (STABLE) ---
+    console.log("[Diagnostics] Blueprint Enterprise Engine Loaded (Removed Overlay / Restored Preview).");
     const { jsPDF } = window.jspdf;
 
+    // --- 1. PROFILE MANAGER ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
     const refreshDropdown = () => {
         const list = document.getElementById('designerList');
@@ -66,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('profileModal').style.display = 'none';
     });
 
-    // --- 2. AUTOSAVE ENGINE (STABLE) ---
+    // --- 2. AUTOSAVE ENGINE ---
     document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => {
         const saved = JSON.parse(localStorage.getItem('surveyAppData')) || {};
         if (saved[input.id]) input.value = saved[input.id];
@@ -84,9 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    evaluateConditionals(); // Run on load
-
-    // --- 3. VOICE DICTATION (STABLE) ---
+    // --- 3. VOICE DICTATION ---
     const notesArea = document.getElementById('designerNotes');
     const dictateBtn = document.getElementById('dictateBtn');
     if (dictateBtn) {
@@ -111,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- 4. INTERACTIVE FABRIC VECTOR IMPLEMENTATION (STABLE) ---
+    // --- 4. INTERACTIVE FABRIC VECTOR IMPLEMENTATION ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
@@ -123,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             allowTouchScrolling: true,
             selection: false
         });
-        fCanvas.freeDrawingBrush.color = '#00E5FF'; // Luxury colour mapped to stable engine
+        fCanvas.freeDrawingBrush.color = '#00E5FF';
         fCanvas.freeDrawingBrush.width = 4;
         window.appCanvases[id] = fCanvas;
 
@@ -145,9 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const dimLineBtn = group.querySelector('.dim-line-btn');
         const textBtn = group.querySelector('.text-btn');
         const calibrateBtn = group.querySelector('.calibrate-btn');
-        const pin1Btn = group.querySelector('.pin-1-btn');
-        const pin2Btn = group.querySelector('.pin-2-btn');
-        const pin3Btn = group.querySelector('.pin-3-btn');
         const undoBtn = group.querySelector('.undo-btn');
         const maximizeBtn = group.querySelector('.maximize-btn');
         const clearBtn = group.querySelector('.clear-btn');
@@ -377,24 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        function addPin(num, color) {
-            const z = fCanvas.getZoom();
-            const vpt = fCanvas.viewportTransform;
-            const centerX = (fCanvas.width / 2 - vpt[4]) / z;
-            const centerY = (fCanvas.height / 2 - vpt[5]) / z;
-
-            const pinGroup = new fabric.Group([
-                new fabric.Circle({radius:18/z, fill:color, stroke:'#fff', strokeWidth:3/z, shadow: new fabric.Shadow({color: 'rgba(0,0,0,0.5)', blur: 5/z, offsetY: 2/z})}),
-                new fabric.Text(num, {fontSize:20/z, fill:'#fff', fontWeight:'bold', originX:'center', originY:'center'})
-            ], {
-                left: centerX, top: centerY, originX: 'center', originY: 'center', hasControls: true, borderColor: '#00E5FF', cornerColor: '#00E5FF', cornerSize: 8/z, transparentCorners: false
-            });
-
-            fCanvas.add(pinGroup);
-            fCanvas.setActiveObject(pinGroup);
-            setButtonState('text'); saveCanvasState();
-        }
-
         lockBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); });
         freehandBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('freehand'); });
         highlightBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('highlight'); });
@@ -402,10 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
         dimLineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('dim-line'); });
         textBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('text'); });
         calibrateBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); });
-
-        pin1Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('1', '#0D6EFD'); });
-        pin2Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('2', '#0dcaf0'); });
-        pin3Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('3', '#ffc107'); });
 
         undoBtn?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -564,24 +504,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- PDF GENERATOR ENGINE (EXACT STABLE LOGIC) ---
+    // --- PDF GENERATOR ENGINE (RESTORED EXACTLY FROM STABLE) ---
     async function executeSecurePDFGeneration(templateId, fileName, btn, data) {
         btn.disabled = true;
         const originalText = btn.innerText;
-        btn.innerText = "Processing...";
+        btn.innerText = "Processing..."; // THIS IS THE ONLY LOADER NOW
 
         const template = document.getElementById(templateId);
         const mainApp = document.querySelector('main') || document.body.firstElementChild;
 
+        // The "Preview" effect: The template is forced onto the screen
         template.style.display = 'block';
         template.style.position = 'absolute';
-        template.style.top = '0'; template.style.left = '0'; template.style.width = '800px';
-        template.style.zIndex = '999999'; template.style.backgroundColor = '#ffffff';
+        template.style.top = '0'; 
+        template.style.left = '0'; 
+        template.style.width = '800px';
+        template.style.zIndex = '999999'; 
+        template.style.backgroundColor = '#ffffff';
         mainApp.style.display = 'none'; // CRUCIAL IOS MEMORY FIX
         window.scrollTo(0, 0);
 
         try {
-            await new Promise(r => setTimeout(r, 800)); 
+            await new Promise(r => setTimeout(r, 800)); // The physical preview time before capture
             
             const doc = new jsPDF('p', 'mm', 'a4');
             const margin = 10;
@@ -650,8 +594,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error("CAPTURE FAILED:", error);
             alert("Capture Failed: " + error.message);
         } finally {
-            template.style.display = 'none'; template.style.position = ''; mainApp.style.display = 'block';
-            btn.innerText = originalText; btn.disabled = false;
+            template.style.display = 'none'; 
+            template.style.position = ''; 
+            mainApp.style.display = 'block';
+            btn.innerText = originalText; 
+            btn.disabled = false;
         }
     }
 
@@ -725,10 +672,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const surname = data.clientName.trim().split(' ').pop() || 'Customer';
         await executeSecurePDFGeneration('pdfTemplateInternal', `${surname}_Internal_Survey.pdf`, this, data);
-
-        if (typeof gtag === 'function') {
-            gtag('event', 'generate_pdf', { 'pdf_type': 'Internal Survey', 'designer': data.designerName });
-        }
     });
 
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
@@ -741,35 +684,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const firstName = data.clientName.split(' ')[0] || 'Customer';
             const greetingEl = document.getElementById('lp-greeting');
             if (greetingEl) {
-                greetingEl.innerHTML = `Hi ${firstName},<br><br>I want to say a massive thank you for inviting me into your home today. I've put together this summary document outlining the major talking points from our appointment so we both know we are on exactly the right lines. If there is anything you'd like to adjust, please don't hesitate to get in touch.`;
+                greetingEl.innerHTML = `Hi ${firstName},<br><br>I want to say a massive thank you for inviting me into your home today. I've put together this summary document outlining the major talking points from our appointment.`;
             }
 
             const sizeEl = document.getElementById('lp-size');
             if (sizeEl) {
                 if (data.buildType && data.proposedSize) {
-                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType} measuring approximately ${data.proposedSize}mm. We have plenty of flexibility to adjust this as we develop the final design.`;
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType} measuring approximately ${data.proposedSize}mm.`;
                 } else if (data.buildType) {
-                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType}. We didn't quite pinpoint the exact dimensions just yet, which is absolutely fine. We have plenty of flexibility to work towards the perfect size as we develop the design.`;
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType}.`;
                 } else {
-                    sizeEl.innerText = `We didn't quite pinpoint the exact dimensions of your build just yet, which is absolutely fine. We have plenty of flexibility to work towards the perfect size as we develop the design.`;
+                    sizeEl.innerText = `We didn't quite pinpoint the exact dimensions of your build just yet.`;
                 }
             }
 
             const roofEl = document.getElementById('lp-roof');
             if (roofEl) {
                 if (data.roofType) {
-                    roofEl.innerText = `To perfectly complement the build, we discussed incorporating a premium ${data.roofType} system. I will prepare a few different 3D options featuring this so you can see exactly how it looks.`;
+                    roofEl.innerText = `To perfectly complement the build, we discussed incorporating a premium ${data.roofType} system.`;
                 } else {
-                    roofEl.innerText = `We have yet to decide on the final roof style, but I will prepare a few different options for you to review so we can find the perfect match for your home.`;
+                    roofEl.innerText = `We have yet to decide on the final roof style.`;
                 }
             }
 
             const frameEl = document.getElementById('lp-frame');
             if (frameEl) {
                 if (data.frameColour) {
-                    frameEl.innerText = `We agreed that the window and door frames will look fantastic finished in an elegant ${data.frameColour} colourway to match your property.`;
+                    frameEl.innerText = `We agreed that the window and door frames will look fantastic finished in an elegant ${data.frameColour} colourway.`;
                 } else {
-                    frameEl.innerText = `We haven't narrowed down the final frame colour or build materials just yet, but we have an incredible range to choose from. Just let me know when you are ready to explore them.`;
+                    frameEl.innerText = `We haven't narrowed down the final frame colour just yet.`;
                 }
             }
 
@@ -780,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const needsSap = (data.sapCalcs === 'Yes');
 
                 if (!needsPlanning && !needsRegs && !needsSap) {
-                    complianceEl.innerText = `Based on your choices, it looks like we do not need Planning Permission, we do not need Building Regulations, and we do not need SAP calculations. Please don't worry about the technicalities of these—I have included a brief explanation of what they mean later in this pack, and our team will handle all of it for you.`;
+                    complianceEl.innerText = `Based on your choices, it looks like we do not need Planning Permission, we do not need Building Regulations, and we do not need SAP calculations.`;
                 } else {
                     let reqs = [];
                     if (needsPlanning) reqs.push(data.planningPerms);
@@ -788,16 +731,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (needsSap) reqs.push("SAP Calculations");
 
                     const reqString = reqs.join(', ').replace(/, ([^,]*)$/, ' and $1');
-                    complianceEl.innerText = `Regarding compliance, based on our discussion your project will require ${reqString}. Please don't worry about the technicalities of these—I have included a brief explanation of what they mean later in this pack, and our dedicated team will handle all of it for you.`;
+                    complianceEl.innerText = `Regarding compliance, based on our discussion your project will require ${reqString}.`;
                 }
             }
 
             const revisitEl = document.getElementById('lp-revisit');
             if (revisitEl) {
                 if (data.revisitDate) {
-                    revisitEl.innerText = `I look forward to our next catch-up scheduled for ${data.revisitDate}${data.revisitLocation ? ` at ${data.revisitLocation}` : ''}. We will go through your custom 3D designs together then. If you need anything before I next get in touch, please contact me on the details below.`;
+                    revisitEl.innerText = `I look forward to our next catch-up scheduled for ${data.revisitDate}.`;
                 } else {
-                    revisitEl.innerText = `We haven't booked in a date for our next catch-up just yet, but as soon as we work out a time, we will get you scheduled in. If you need anything before I next get in touch, please contact me on the details below.`;
+                    revisitEl.innerText = `We haven't booked in a date for our next catch-up just yet.`;
                 }
             }
 
@@ -808,9 +751,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const surname = data.clientName.trim().split(' ').pop() || 'Customer';
         await executeSecurePDFGeneration('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`, this, data);
-
-        if (typeof gtag === 'function') {
-            gtag('event', 'generate_pdf', { 'pdf_type': 'Customer Pack', 'designer': data.designerName });
-        }
     });
 });
