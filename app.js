@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Precision Engine Active)");
+    console.log("[Blueprint Enterprise] Luxury OS Boot Sequence Initiated. (Hardened Engine)");
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('Service Worker Error', err)); }
 
@@ -29,11 +29,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('resetFormBtn')?.addEventListener('click', () => { if(confirm("Are you sure you want to completely clear the current session?")) { localStorage.removeItem('surveyAppData'); location.reload(); } });
 
-    // --- VOICE DICTATION ---
+    // --- DICTATION ---
     const notesArea = document.getElementById('designerNotes'); const dictateBtn = document.getElementById('dictateBtn');
     if (dictateBtn) { if ('webkitSpeechRecognition' in window) { const rec = new webkitSpeechRecognition(); rec.continuous = true; rec.interimResults = true; rec.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. '; } const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; data['designerNotes'] = notesArea.value; localStorage.setItem('surveyAppData', JSON.stringify(data)); }; dictateBtn.onclick = () => { if(rec.running) { rec.stop(); dictateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg> Dictate'; } else { rec.start(); dictateBtn.innerHTML = '🛑 Stop'; } rec.running = !rec.running; }; } else { dictateBtn.style.display = 'none'; } }
 
-    // --- FABRIC CANVAS & FLAWLESS LOUPE ENGINE ---
+    // --- FABRIC CANVAS & LOUPE FIX ---
     const loupeEl = document.getElementById('precisionLoupe'); const lCtx = loupeEl.getContext('2d'); window.appCanvases = {};
     
     document.querySelectorAll('.canvas-group').forEach(group => {
@@ -50,41 +50,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const lockBtn = group.querySelector('.lock-btn'); const calibrateBtn = group.querySelector('.calibrate-btn'); const freehandBtn = group.querySelector('.freehand-btn'); const highlightBtn = group.querySelector('.highlight-btn'); const lineBtn = group.querySelector('.line-btn'); const dimLineBtn = group.querySelector('.dim-line-btn'); const textBtn = group.querySelector('.text-btn'); const undoBtn = group.querySelector('.undo-btn'); const maximizeBtn = group.querySelector('.maximize-btn'); const clearBtn = group.querySelector('.clear-btn'); const fileInput = group.querySelector('.camera-input'); const canvasContainer = group.querySelector('.canvas-container');
         let isPinching = false; let lastPinchDist = 0; let isPanning = false; let lastPanX = 0; let lastPanY = 0;
 
-        // FLAWLESS LOUPE: Maps physical screen pixels to internal canvas pixels perfectly
+        // FIXED LOUPE: Separates visual finger position (pageX/Y) from internal canvas logic
         function updateLoupe(opt) {
             const e = opt.e;
             const isTouch = e.touches && e.touches.length > 0;
-            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+            const pageX = isTouch ? e.touches[0].pageX : e.pageX;
+            const pageY = isTouch ? e.touches[0].pageY : e.pageY;
 
-            // 1. Position Loupe visually over the finger
-            const OFFSET_Y = isTouch ? 100 : 60;
-            loupeEl.style.left = (clientX - 60) + 'px';
-            loupeEl.style.top = (clientY - OFFSET_Y - 60) + 'px';
+            // 1. Position Loupe visually over the finger (using pageX/pageY so scroll doesn't break it)
+            const OFFSET_Y = isTouch ? 120 : 60;
+            loupeEl.style.left = (pageX - 60) + 'px';
+            loupeEl.style.top = (pageY - OFFSET_Y) + 'px';
             loupeEl.style.display = 'block';
 
-            // 2. Raw DOM Bounding Box calculation
-            const rect = fCanvas.lowerCanvasEl.getBoundingClientRect();
-            const touchX = clientX - rect.left;
-            const touchY = clientY - rect.top;
-
-            // 3. Perfect scaling ratio mapping
-            const scaleX = fCanvas.lowerCanvasEl.width / rect.width;
-            const scaleY = fCanvas.lowerCanvasEl.height / rect.height;
-            const sourceX = touchX * scaleX;
-            const sourceY = touchY * scaleY;
+            // 2. Get exact canvas logical coordinates
+            const pointer = fCanvas.getPointer(e);
+            
+            // 3. Map logical coordinates to screen for rendering inside the loupe
+            const vpt = fCanvas.viewportTransform;
+            const screenX = pointer.x * vpt[0] + vpt[4];
+            const screenY = pointer.y * vpt[3] + vpt[5];
 
             lCtx.clearRect(0, 0, 120, 120);
             const sWidth = 60; const sHeight = 60;
             try {
-                lCtx.drawImage(fCanvas.lowerCanvasEl, sourceX - sWidth/2, sourceY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
-                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, sourceX - sWidth/2, sourceY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
+                lCtx.drawImage(fCanvas.lowerCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120);
+                if (fCanvas.upperCanvasEl) { lCtx.drawImage(fCanvas.upperCanvasEl, screenX - sWidth/2, screenY - sHeight/2, sWidth, sHeight, 0, 0, 120, 120); }
             } catch(err) {}
 
             lCtx.strokeStyle = '#00E5FF'; lCtx.lineWidth = 2;
             lCtx.beginPath(); lCtx.moveTo(60, 45); lCtx.lineTo(60, 75); lCtx.moveTo(45, 60); lCtx.lineTo(75, 60); lCtx.stroke();
             
-            return fCanvas.getPointer(opt.e);
+            return pointer;
         }
 
         fCanvas.on('mouse:wheel', function(opt) { let delta = opt.e.deltaY; let zoom = fCanvas.getZoom(); zoom *= 0.999 ** delta; if (zoom > 10) zoom = 10; if (zoom < 0.5) zoom = 0.5; fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom); opt.e.preventDefault(); opt.e.stopPropagation(); });
@@ -156,18 +153,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- PDF GENERATION ENGINE ---
     
-    // UI Loader to mask the rendering process
     function showPdfLoader(text) {
         let loader = document.getElementById('pdfLoadingOverlay');
         if(!loader) {
-            loader = document.createElement('div');
-            loader.id = 'pdfLoadingOverlay';
+            loader = document.createElement('div'); loader.id = 'pdfLoadingOverlay';
             loader.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,11,20,0.98);z-index:99999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#00E5FF;font-family:Inter,sans-serif;';
             loader.innerHTML = '<div class="loader-bar" style="width:200px;margin-bottom:20px;"><div class="loader-fill"></div></div><h2 id="pdfLoaderText" style="font-weight:600;letter-spacing:1px;text-align:center;"></h2>';
             document.body.appendChild(loader);
         }
-        document.getElementById('pdfLoaderText').innerText = text;
-        loader.style.display = 'flex';
+        document.getElementById('pdfLoaderText').innerText = text; loader.style.display = 'flex';
     }
     function hidePdfLoader() { const loader = document.getElementById('pdfLoadingOverlay'); if(loader) loader.style.display = 'none'; }
 
@@ -196,16 +190,17 @@ document.addEventListener('DOMContentLoaded', function() {
         await populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid'); await populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
     }
 
-    // INTERNAL PDF EXPORT (5 SEPARATE PAGES)
+    // --- FIX: FORCE SCROLL TO TOP & POSITION TEMPLATE OVER SCREEN TO PREVENT BLANK RENDER ---
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async function() {
+        window.scrollTo(0, 0); // Crucial for Safari rendering
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateInternal');
         showPdfLoader("Rendering blueprint data...");
         
-        // Force template strictly into document flow to guarantee capture
-        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0'; template.style.left = '0'; template.style.zIndex = '999998'; 
+        // Put the template directly onto the visible screen (but underneath the black loading mask)
+        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0px'; template.style.left = '0px'; template.style.zIndex = '9998'; 
         
         await applySafeLogo(template, data.logoSource); await renderPdfFields(data);
-        await new Promise(r => setTimeout(r, 1500)); // Paint time
+        await new Promise(r => setTimeout(r, 2000)); // Extra time for iPad image decoding
 
         try {
             let pages = Array.from(template.querySelectorAll('.pdf-page'));
@@ -213,7 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 showPdfLoader(`Exporting Part ${i+1} of ${pages.length}...`);
                 const singleDoc = new jsPDF('p', 'mm', 'a4');
                 
-                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff' });
+                // scrollX/scrollY forced to 0 fixes the white-offset issue on mobile
+                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
                 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 const imgProps = singleDoc.getImageProperties(imgData);
@@ -228,12 +224,13 @@ document.addEventListener('DOMContentLoaded', function() {
         finally { template.style.display = 'none'; template.style.zIndex = '-1'; hidePdfLoader(); }
     });
 
-    // CUSTOMER PDF EXPORT (SINGLE DOCUMENT)
+    // --- FIX: CUSTOMER PDF ---
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
+        window.scrollTo(0, 0);
         const data = getSurveyData(); const template = document.getElementById('pdfTemplateCustomer');
         showPdfLoader("Compiling Customer Pack...");
         
-        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0'; template.style.left = '0'; template.style.zIndex = '999998';
+        template.style.display = 'block'; template.style.position = 'absolute'; template.style.top = '0px'; template.style.left = '0px'; template.style.zIndex = '9998';
         
         await applySafeLogo(template, data.logoSource);
         const firstName = data.clientName.split(' ')[0] || 'Customer';
@@ -244,14 +241,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('lp-revisit').innerText = data.revisitDate ? `I look forward to our next catch-up scheduled for ${data.revisitDate}.` : `We haven't booked in a date for our next catch-up just yet.`;
         document.getElementById('lp-designer-name').innerText = data.designerName; document.getElementById('lp-designer-contact').innerText = `${data.designerPhone} | ${data.designerEmail}`;
         
-        await new Promise(r => setTimeout(r, 1500)); 
+        await new Promise(r => setTimeout(r, 2000)); 
 
         try {
             showPdfLoader("Stitching Pamphlets...");
             const doc = new jsPDF('p', 'mm', 'a4');
             const pageEl = template.querySelector('.pdf-page');
             
-            const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff' });
+            const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, logging: false, windowWidth: 800, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
             
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const imgProps = doc.getImageProperties(imgData);
