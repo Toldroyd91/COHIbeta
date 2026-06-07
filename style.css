@@ -116,3 +116,112 @@ select.form-group__input { padding-right: 38px; cursor: pointer; }
     .nav-controls { width: 100%; display: grid; grid-template-columns: 1fr 1fr auto; }
     .nav-select, .nav-input { width: 100% !important; }
 }
+
+/* --- DYNAMIC HEADER --- */
+#mainHeader {
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+    z-index: 1000;
+    padding: 30px 20px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border-bottom: 1px solid #333;
+}
+
+.header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.4s ease;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.brand-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.4s ease;
+}
+
+#dynamicBrandLogo {
+    height: 110px; /* Big initial logo */
+    max-width: 100%;
+    object-fit: contain;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+#dynamicBrandName {
+    font-size: 2rem;
+    margin: 0;
+    color: #fff;
+    transition: all 0.4s ease;
+    text-align: center;
+}
+
+/* Hide the text by default if a logo is chosen */
+.brand-display.has-logo #dynamicBrandName {
+    display: none;
+}
+
+.header-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    transition: all 0.4s ease;
+    width: 100%;
+}
+
+.dropdown-brand { width: 220px; min-height: 40px; }
+.dropdown-designer { width: 180px; min-height: 40px; }
+.profile-btn { min-height: 40px; margin-top: 0; }
+
+/* --- SHRUNK HEADER STATE (Triggered on scroll) --- */
+#mainHeader.shrunk {
+    padding: 10px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+#mainHeader.shrunk .header-container {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#mainHeader.shrunk .brand-display {
+    flex-direction: row;
+    gap: 15px;
+}
+
+#mainHeader.shrunk #dynamicBrandLogo {
+    height: 35px; /* Shrinks to fit navbar */
+}
+
+/* Make the brand text appear next to the logo when shrunk! */
+#mainHeader.shrunk .brand-display.has-logo #dynamicBrandName {
+    display: block;
+    font-size: 1.2rem;
+    white-space: nowrap;
+}
+
+#mainHeader.shrunk .header-controls {
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+/* Mobile Fallback */
+@media (max-width: 768px) {
+    #mainHeader.shrunk .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    #mainHeader.shrunk .header-controls {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+}
