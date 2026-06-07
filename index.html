@@ -1,6 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-<header id="mainHeader" class="navbar navbar--top">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Survey App</title>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0J8DC9GD6Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-0J8DC9GD6Z');
+    </script>
+    <style>
+        /* Restoring your luxury background gradient */
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: transparent !important; 
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #000000 0%, #002f54 100%);
+            z-index: -999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splashScreen">
+        <div class="splash-content">
+            <img src="logo.jpg" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
+            <h1 class="splash-title">PREDESIGN ENGINE</h1>
+            <div class="loader-bar"><div class="loader-fill"></div></div>
+        </div>
+    </div>
+
+    <header id="mainHeader" class="navbar navbar--top">
         <div class="navbar__container header-container">
             
             <div id="brandDisplay" class="brand-display">
@@ -26,38 +70,8 @@
 
         </div>
     </header>
-<body>
-    <div id="splashScreen">
-        <div class="splash-content">
-            <img src="logo.jpg" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
-            <h1 class="splash-title">PREDESIGN ENGINE</h1>
-            <div class="loader-bar"><div class="loader-fill"></div></div>
-        </div>
-    </div>
 
-    <canvas id="precisionLoupe" width="120" height="120"></canvas>
-
-    <header class="navbar navbar--top" id="mainHeader">
-        <div class="navbar__container">
-            <h1 class="navbar__title">Survey Pro</h1>
-            <div class="nav-controls">
-                <select id="brandSelect" class="form-group__input form-group__input--touch nav-select">
-                    <option value="Clearview">Clearview</option>
-                    <option value="CO Home Improvements">CO Home Improvements</option>
-                    <option value="Orion Windows">Orion</option>
-                    <option value="Planet">Planet</option>
-                    <option value="Trent Valley Windows">Trent Valley</option>
-                    <option value="West Yorkshire Windows">West Yorkshire</option>
-                    <option value="Yorkshire Windows">Yorkshire Windows</option>
-                </select>
-                <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch nav-input" placeholder="Designer...">
-                <datalist id="designerList"></datalist>
-                <button id="openProfileManagerBtn" class="nav-btn btn-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                </button>
-            </div>
-        </div>
-    </header>
+    <main class="main-container main-container--centered">
 
     <main class="main-container main-container--centered">
         <article class="card">
