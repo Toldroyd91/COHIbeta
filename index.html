@@ -1,54 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-    <!DOCTYPE html>
-<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Survey App</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0J8DC9GD6Z"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-0J8DC9GD6Z');
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Survey App</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0J8DC9GD6Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-0J8DC9GD6Z');
+    </script>
+    <style>
+        html, body { margin: 0; padding: 0; min-height: 100%; background: transparent !important; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000000 0%, #002f54 100%); z-index: -999; }
+        .btn-danger { background: #8b0000; color: white; border: none; }
+        .canvas-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .tool-btn { background: #2D2D2D; color: #A0A0A0; border: 1px solid #444; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; display: inline-block; width: auto; font-weight: 500; transition: all 0.15s ease; }
+        .tool-btn.active { background: #0D6EFD; color: #fff; border-color: #0D6EFD; box-shadow: 0 0 8px rgba(13,110,253,0.4); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 999999; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; border: 1px solid #333; }
+    </style>
 </head>
 <body>
 
-    <div id="splashScreen">
-        <div class="splash-content">
-            <img src="logo.jpg" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
-            <h1 class="splash-title">PREDESIGN ENGINE</h1>
-            <div class="loader-bar"><div class="loader-fill"></div></div>
-        </div>
-    </div>
+    <div id="splashScreen">
+        <div class="splash-content">
+            <img src="logo.jpg" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
+            <h1 class="splash-title">PREDESIGN ENGINE</h1>
+            <div class="loader-bar"><div class="loader-fill"></div></div>
+        </div>
+    </div>
 
-    <header id="mainHeader" class="navbar navbar--top">
-        <div class="navbar__container header-container">
-            <div id="brandDisplay" class="brand-display">
-                <img id="dynamicBrandLogo" src="" alt="Brand Logo" style="display: none;">
-                <h1 id="dynamicBrandName" class="navbar__title">Survey App</h1>
-            </div>
-            <div id="headerControls" class="header-controls">
-                <select id="brandSelect" class="form-group__input form-group__input--touch dropdown-brand">
-                    <option value="">Select Brand...</option>
-                    <option value="Clearview">Clearview</option>
-                    <option value="CO Home Improvements">CO Home Improvements</option>
-                    <option value="Orion Windows">Orion Windows</option>
-                    <option value="Planet">Planet</option>
-                    <option value="Trent Valley Windows">Trent Valley Windows</option>
-                    <option value="West Yorkshire Windows">West Yorkshire Windows</option>
-                    <option value="Yorkshire Windows">Yorkshire Windows</option>
-                </select>
-                <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch dropdown-designer" placeholder="Select Designer...">
-                <datalist id="designerList"></datalist>
-                <button id="openProfileManagerBtn" class="tool-btn profile-btn">⚙️ Profile</button>
-            </div>
-        </div>
-    </header>
+    <header id="mainHeader" class="navbar navbar--top">
+        <div class="navbar__container header-container">
+            <div id="brandDisplay" class="brand-display">
+                <img id="dynamicBrandLogo" src="" alt="Brand Logo" style="display: none;">
+                <h1 id="dynamicBrandName" class="navbar__title">Survey App</h1>
+            </div>
+            <div id="headerControls" class="header-controls">
+                <select id="brandSelect" class="form-group__input form-group__input--touch dropdown-brand">
+                    <option value="">Select Brand...</option>
+                    <option value="Clearview">Clearview</option>
+                    <option value="CO Home Improvements">CO Home Improvements</option>
+                    <option value="Orion Windows">Orion Windows</option>
+                    <option value="Planet">Planet</option>
+                    <option value="Trent Valley Windows">Trent Valley Windows</option>
+                    <option value="West Yorkshire Windows">West Yorkshire Windows</option>
+                    <option value="Yorkshire Windows">Yorkshire Windows</option>
+                </select>
+                <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch dropdown-designer" placeholder="Select Designer...">
+                <datalist id="designerList"></datalist>
+                <button id="openProfileManagerBtn" class="tool-btn profile-btn">⚙️ Profile</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container main-container--centered">
+        <article class="card card--primary">
+            <h2 class="card__title">Customer Details</h2>
+            <div class="form-group"><label class="form-group__label">Customer Name:</label><input type="text" id="clientName" class="form-group__input form-group__input--touch"></div>
+            </article>
+        
+        <div style="display: flex; gap: 15px; margin-top: 34px;">
+            <button id="generateCustomerPdfBtn" class="button" style="background: #2D2D2D; border: 2px solid var(--accent); width: 50%;">Customer Checklist PDF</button>
+            <button id="generateInternalPdfBtn" class="button" style="width: 50%;">Full Survey PDF</button>
+        </div>
+        <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="designers.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
 
     <main class="main-container main-container--centered">
         </main>
