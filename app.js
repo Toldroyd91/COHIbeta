@@ -9,40 +9,36 @@ document.addEventListener('DOMContentLoaded', function() {
             splash.style.opacity = '0'; 
             setTimeout(() => splash.style.display = 'none', 600); 
         } 
-    }, 1500);
+    }, 1000);
 
-    // --- 1. DYNAMIC HEADER ---
-    window.brandLogos = {
-        "Clearview": "clearview.png",
-        "CO Home Improvements": "co-home-improvements.png",
-        "Orion Windows": "orion.png",
-        "Planet": "planet.png",
-        "Trent Valley Windows": "trent-valley.png",
-        "West Yorkshire Windows": "west-yorkshire.png",
-        "Yorkshire Windows": "yorkshire.png"
+    // --- 1. DYNAMIC SURVEY UPLOAD LABEL ---
+    const updateDynamicLabel = () => {
+        const trees = document.getElementById('treesExist')?.value;
+        const manhole = document.getElementById('manholeExist')?.value;
+        const weep = document.getElementById('weepventsExist')?.value;
+        const pipes = document.getElementById('pipesExist')?.value;
+
+        let needed = [];
+        if (trees === 'Yes') needed.push('Trees');
+        if (manhole === 'Yes') needed.push('Manholes');
+        if (weep === 'Yes') needed.push('Weep Vents');
+        if (pipes === 'Yes') needed.push('Pipes (RWP/SVP)');
+
+        const label = document.getElementById('dynamicSurveyUploadLabel');
+        if (label) {
+            if (needed.length > 0) {
+                label.innerText = `Site Survey Photos (Please capture: ${needed.join(', ')})`;
+                label.style.color = '#ffc107'; // Highlight yellow to grab attention
+            } else {
+                label.innerText = `Site Survey Photos (General)`;
+                label.style.color = 'var(--accent)';
+            }
+        }
     };
 
-    const brandSelect = document.getElementById('brandSelect');
-    const brandLogo = document.getElementById('dynamicBrandLogo');
-    const brandName = document.getElementById('dynamicBrandName');
-    const brandDisplay = document.getElementById('brandDisplay');
-
-    function updateBrandHeader() {
-        if (!brandSelect || !brandLogo || !brandName) return;
-        const brand = brandSelect.value;
-        if (brand && window.brandLogos[brand]) {
-            brandLogo.src = window.brandLogos[brand];
-            brandLogo.style.display = 'block';
-            brandName.innerText = brand;
-            brandDisplay.classList.add('has-logo');
-        } else {
-            brandLogo.style.display = 'none';
-            brandName.innerText = "Survey Pro";
-            brandDisplay.classList.remove('has-logo');
-        }
-    }
-
-    if (brandSelect) brandSelect.addEventListener('change', updateBrandHeader);
+    document.querySelectorAll('.dyn-survey-select').forEach(sel => {
+        sel.addEventListener('change', updateDynamicLabel);
+    });
 
     // --- 2. PROFILE MANAGER ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
@@ -75,27 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('profileModal').style.display = 'none';
     });
 
-    // --- 3. AUTOSAVE ---
-    document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => {
-        const saved = JSON.parse(localStorage.getItem('surveyAppData')) || {};
-        if (saved[input.id]) input.value = saved[input.id];
-        input.addEventListener('input', () => {
-            const data = JSON.parse(localStorage.getItem('surveyAppData')) || {};
-            data[input.id] = input.value;
-            localStorage.setItem('surveyAppData', JSON.stringify(data));
-        });
-    });
-
-    document.getElementById('resetFormBtn')?.addEventListener('click', () => {
-        if(confirm("Are you sure you want to clear the entire form for a new appointment?")) {
-            localStorage.removeItem('surveyAppData');
-            location.reload();
-        }
-    });
-
-    updateBrandHeader(); 
-
-    // --- 4. FABRIC CANVAS V2 ---
+    // --- 3. FABRIC CANVAS V2 (Fixed Tools) ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
@@ -103,15 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!canvasEl) return;
 
         const fCanvas = new fabric.Canvas(canvasEl.id, { 
-            isDrawingMode: false, allowTouchScrolling: true, selection: false
+            isDrawingMode: false, allowTouchScrolling: true, selection: true
         });
-        fCanvas.freeDrawingBrush.color = '#00E5FF';
-        fCanvas.freeDrawingBrush.width = 4;
         window.appCanvases[id] = fCanvas;
 
-        const savedData = JSON.parse(localStorage.getItem('surveyAppData')) || {}; 
-        if(savedData['canvas_' + id]) fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
-        
         const saveCanvasState = () => { 
             const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; 
             data['canvas_' + id] = JSON.stringify(fCanvas.toJSON()); 
@@ -120,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fCanvas.on('object:added', saveCanvasState); 
         fCanvas.on('object:modified', saveCanvasState); 
 
+        // Image Uploader
         const fileInput = group.querySelector('.camera-input');
         if(fileInput) {
             fileInput.addEventListener('change', function(e) {
@@ -137,12 +109,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 reader.readAsDataURL(file);
             });
         }
+
+        // Tools Setup
+        const resetButtons = () => group.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        
+        group.querySelector('.lock-btn')?.addEventListener('click', function() {
+            resetButtons(); this.classList.add('active');
+            fCanvas.isDrawingMode = false;
+        });
+
+        group.querySelector('.freehand-btn')?.addEventListener('click', function() {
+            resetButtons(); this.classList.add('active');
+            fCanvas.isDrawingMode = true;
+            fCanvas.freeDrawingBrush = new fabric.PencilBrush(fCanvas);
+            fCanvas.freeDrawingBrush.color = '#00E5FF';
+            fCanvas.freeDrawingBrush.width = 4;
+        });
+
+        group.querySelector('.highlight-btn')?.addEventListener('click', function() {
+            resetButtons(); this.classList.add('active');
+            fCanvas.isDrawingMode = true;
+            fCanvas.freeDrawingBrush = new fabric.PencilBrush(fCanvas);
+            fCanvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.4)';
+            fCanvas.freeDrawingBrush.width = 20;
+        });
+
+        group.querySelector('.text-btn')?.addEventListener('click', function() {
+            resetButtons(); this.classList.add('active');
+            fCanvas.isDrawingMode = false;
+            const text = new fabric.IText('Double click to edit', { 
+                left: 50, top: 50, fontFamily: 'sans-serif', fill: '#00E5FF', fontSize: 24 
+            });
+            fCanvas.add(text);
+            fCanvas.setActiveObject(text);
+        });
+
+        group.querySelector('.undo-btn')?.addEventListener('click', function() {
+            const objects = fCanvas.getObjects();
+            if(objects.length > 0) {
+                // Remove the last added object (skip the background image if it's the very first object)
+                const lastObj = objects[objects.length - 1];
+                if(objects.length === 1 && lastObj.type === 'image') return; // Don't undo the base photo
+                fCanvas.remove(lastObj);
+                saveCanvasState();
+            }
+        });
+
+        group.querySelector('.clear-btn')?.addEventListener('click', function() {
+            if(confirm("Clear drawings on this canvas?")) {
+                const objects = fCanvas.getObjects();
+                // Keep the background image, remove everything else
+                const toRemove = objects.filter(o => o.type !== 'image');
+                toRemove.forEach(o => fCanvas.remove(o));
+                saveCanvasState();
+            }
+        });
     });
 
-    // --- 5. BULLETPROOF PDF GENERATION ---
+    // --- 4. IMAGE UPLOAD HANDLERS (For PDF display) ---
+    const uploadedImagesStore = {
+        misc: [],
+        survey: [],
+        access: []
+    };
+
+    const handleMultiUpload = (inputId, storeKey) => {
+        const el = document.getElementById(inputId);
+        if(!el) return;
+        el.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => uploadedImagesStore[storeKey].push(event.target.result);
+                reader.readAsDataURL(file);
+            });
+        });
+    };
+    handleMultiUpload('miscPhotos', 'misc');
+    handleMultiUpload('surveyPhotos', 'survey');
+    handleMultiUpload('accessPhotos', 'access');
+
+    // --- 5. PDF GENERATION ENGINE ---
+    
+    // CUSTOMER PDF
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('clientName');
-        // Fallback name if left blank so it doesn't crash
         const rawName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Valued Customer';
         const surname = rawName.split(' ').pop() || 'Customer';
         
@@ -153,49 +204,81 @@ document.addEventListener('DOMContentLoaded', function() {
         const size = document.getElementById('proposedSize')?.value || "TBC";
         const roof = document.getElementById('roofType')?.value || "TBC";
         const frame = document.getElementById('frameColour')?.value || "TBC";
-        const bRegs = document.getElementById('buildingRegs')?.value || "No";
-        const pPerms = document.getElementById('planningPerms')?.value || "No";
         const designerName = document.getElementById('designerSelect')?.value || "Your Designer";
         
         document.getElementById('lp-greeting').innerText = `Dear ${rawName}, thank you for your time today to discuss your exciting new project.`;
         document.getElementById('lp-size').innerText = `Based on our measurements, we are looking at a proposed size of approximately ${size}.`;
         document.getElementById('lp-roof').innerText = `We discussed utilizing the ${roof} system to ensure the space is perfect year-round.`;
         document.getElementById('lp-frame').innerText = `For the aesthetics, we have noted your preference for ${frame} frames.`;
-        
-        let compText = "";
-        if(bRegs === "Yes" || pPerms !== "No") {
-            compText = `Your project will require some compliance oversight (Building Regs: ${bRegs}, Planning: ${pPerms}). Our team handles all of this for you.`;
-        } else {
-            compText = "Your project currently looks to be exempt from additional planning compliance, streamlining our timeline.";
-        }
-        document.getElementById('lp-compliance').innerText = compText;
-        
-        const rDate = document.getElementById('revisitDate')?.value;
-        if(rDate) {
-            document.getElementById('lp-revisit').innerText = `I look forward to our next catch-up scheduled for ${rDate}. We will go through your custom 3D designs then.`;
-        } else {
-            document.getElementById('lp-revisit').innerText = `We haven't booked in a date for our next catch-up just yet, but I will be in touch shortly to get you scheduled in.`;
-        }
-
         document.getElementById('lp-designer-name').innerText = designerName;
 
-        // Briefly bring template fully into frame (behind everything) so html2canvas doesn't crash
-        template.style.left = '0px'; 
-        template.style.zIndex = '-9999';
+        // Populate Images if any exist
+        const allCustImages = [...uploadedImagesStore.misc, ...uploadedImagesStore.survey];
+        const imagePage = document.getElementById('customerPdfImagePage');
+        const imageGrid = document.getElementById('pdfCustomerImagesGrid');
+        
+        if (allCustImages.length > 0) {
+            imagePage.style.display = 'block';
+            imageGrid.innerHTML = allCustImages.map(imgSrc => 
+                `<img src="${imgSrc}" style="width: 100%; height: 200px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px;">`
+            ).join('');
+        } else {
+            imagePage.style.display = 'none';
+        }
 
+        template.style.left = '0px'; 
+        
         try {
             const canvas = await html2canvas(template, { scale: 2, useCORS: true, logging: false });
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
             pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`${surname}_Design_Consultation.pdf`);
         } catch(e) {
             console.error(e);
             alert("PDF Generation failed. Please try again.");
         } finally {
-            // Send it back off-screen
+            template.style.left = '-9999px';
+        }
+    });
+
+    // INTERNAL PDF
+    document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async () => {
+        const nameInput = document.getElementById('clientName');
+        const rawName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Valued Customer';
+        const surname = rawName.split(' ').pop() || 'Customer';
+        
+        const template = document.getElementById('pdfTemplateInternal');
+        if(!template) return alert("Error: Template missing");
+
+        // Populate internal fields
+        document.getElementById('intPdfName').innerText = rawName;
+        document.getElementById('intPdfDate').innerText = document.getElementById('apptDate')?.value || "N/A";
+        document.getElementById('intPdfDesigner').innerText = document.getElementById('designerSelect')?.value || "N/A";
+        document.getElementById('intPdfBuild').innerText = document.getElementById('buildType')?.value || "N/A";
+        document.getElementById('intPdfRoof').innerText = document.getElementById('roofType')?.value || "N/A";
+        document.getElementById('intPdfNotes').innerText = document.getElementById('designerNotes')?.value || "None";
+
+        template.style.left = '0px'; 
+        
+        try {
+            const canvas = await html2canvas(template, { scale: 2, useCORS: true, logging: false });
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`${surname}_Internal_Survey.pdf`);
+        } catch(e) {
+            console.error(e);
+            alert("PDF Generation failed.");
+        } finally {
             template.style.left = '-9999px';
         }
     });
