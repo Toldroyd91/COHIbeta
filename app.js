@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (label) {
             if (needed.length > 0) {
                 label.innerText = `Site Survey Photos (Please capture: ${needed.join(', ')})`;
-                label.style.color = '#ffc107'; // Highlight yellow to grab attention
+                label.style.color = '#ffc107'; 
             } else {
                 label.innerText = `Site Survey Photos (General)`;
                 label.style.color = 'var(--accent)';
@@ -91,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fCanvas.on('object:added', saveCanvasState); 
         fCanvas.on('object:modified', saveCanvasState); 
 
-        // Image Uploader
         const fileInput = group.querySelector('.camera-input');
         if(fileInput) {
             fileInput.addEventListener('change', function(e) {
@@ -110,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Tools Setup
         const resetButtons = () => group.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         
         group.querySelector('.lock-btn')?.addEventListener('click', function() {
@@ -147,9 +145,8 @@ document.addEventListener('DOMContentLoaded', function() {
         group.querySelector('.undo-btn')?.addEventListener('click', function() {
             const objects = fCanvas.getObjects();
             if(objects.length > 0) {
-                // Remove the last added object (skip the background image if it's the very first object)
                 const lastObj = objects[objects.length - 1];
-                if(objects.length === 1 && lastObj.type === 'image') return; // Don't undo the base photo
+                if(objects.length === 1 && lastObj.type === 'image') return; 
                 fCanvas.remove(lastObj);
                 saveCanvasState();
             }
@@ -158,7 +155,6 @@ document.addEventListener('DOMContentLoaded', function() {
         group.querySelector('.clear-btn')?.addEventListener('click', function() {
             if(confirm("Clear drawings on this canvas?")) {
                 const objects = fCanvas.getObjects();
-                // Keep the background image, remove everything else
                 const toRemove = objects.filter(o => o.type !== 'image');
                 toRemove.forEach(o => fCanvas.remove(o));
                 saveCanvasState();
@@ -166,12 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 4. IMAGE UPLOAD HANDLERS (For PDF display) ---
-    const uploadedImagesStore = {
-        misc: [],
-        survey: [],
-        access: []
-    };
+    // --- 4. IMAGE UPLOAD HANDLERS ---
+    const uploadedImagesStore = { misc: [], survey: [], access: [] };
 
     const handleMultiUpload = (inputId, storeKey) => {
         const el = document.getElementById(inputId);
@@ -189,17 +181,62 @@ document.addEventListener('DOMContentLoaded', function() {
     handleMultiUpload('surveyPhotos', 'survey');
     handleMultiUpload('accessPhotos', 'access');
 
-    // --- 5. PDF GENERATION ENGINE ---
+    // --- 5. MULTI-PAGE PDF ENGINE ---
     
-    // CUSTOMER PDF
+    // Core function to stitch pages together
+    async function generateMultiPagePDF(templateId, filename) {
+        const template = document.getElementById(templateId);
+        if(!template) return alert("Error: Template missing");
+
+        // Bring the template on-screen but hidden behind everything
+        template.style.left = '0px'; 
+        template.style.zIndex = '-9999';
+
+        try {
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            
+            // Find all individual pages inside the template
+            const pages = Array.from(template.querySelectorAll('.pdf-page')).filter(p => p.style.display !== 'none');
+            
+            for (let i = 0; i < pages.length; i++) {
+                const pageEl = pages[i];
+                
+                // Force background to white for PDF capture
+                pageEl.style.backgroundColor = '#ffffff';
+
+                // Take snapshot of just this specific page
+                const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, logging: false });
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                
+                // Calculate height to maintain perfect aspect ratio
+                const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                // Add the image to the PDF
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
+                
+                // If there are more pages to process, add a fresh blank page to the PDF
+                if (i < pages.length - 1) {
+                    pdf.addPage();
+                }
+            }
+            
+            pdf.save(filename);
+        } catch(e) {
+            console.error(e);
+            alert("PDF Generation failed. Please try again.");
+        } finally {
+            // Send the template back off-screen
+            template.style.left = '-9999px';
+        }
+    }
+
+    // Customer PDF Button
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('clientName');
         const rawName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Valued Customer';
         const surname = rawName.split(' ').pop() || 'Customer';
         
-        const template = document.getElementById('pdfTemplateCustomer');
-        if(!template) return alert("Error: Template missing");
-
         // Populate fields
         const size = document.getElementById('proposedSize')?.value || "TBC";
         const roof = document.getElementById('roofType')?.value || "TBC";
@@ -217,43 +254,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const imagePage = document.getElementById('customerPdfImagePage');
         const imageGrid = document.getElementById('pdfCustomerImagesGrid');
         
-        if (allCustImages.length > 0) {
+        if (allCustImages.length > 0 && imagePage && imageGrid) {
             imagePage.style.display = 'block';
             imageGrid.innerHTML = allCustImages.map(imgSrc => 
                 `<img src="${imgSrc}" style="width: 100%; height: 200px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px;">`
             ).join('');
-        } else {
+        } else if (imagePage) {
             imagePage.style.display = 'none';
         }
 
-        template.style.left = '0px'; 
-        
-        try {
-            const canvas = await html2canvas(template, { scale: 2, useCORS: true, logging: false });
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${surname}_Design_Consultation.pdf`);
-        } catch(e) {
-            console.error(e);
-            alert("PDF Generation failed. Please try again.");
-        } finally {
-            template.style.left = '-9999px';
-        }
+        await generateMultiPagePDF('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`);
     });
 
-    // INTERNAL PDF
+    // Internal PDF Button
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('clientName');
         const rawName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Valued Customer';
         const surname = rawName.split(' ').pop() || 'Customer';
-        
-        const template = document.getElementById('pdfTemplateInternal');
-        if(!template) return alert("Error: Template missing");
 
         // Populate internal fields
         document.getElementById('intPdfName').innerText = rawName;
@@ -263,23 +280,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('intPdfRoof').innerText = document.getElementById('roofType')?.value || "N/A";
         document.getElementById('intPdfNotes').innerText = document.getElementById('designerNotes')?.value || "None";
 
-        template.style.left = '0px'; 
-        
-        try {
-            const canvas = await html2canvas(template, { scale: 2, useCORS: true, logging: false });
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${surname}_Internal_Survey.pdf`);
-        } catch(e) {
-            console.error(e);
-            alert("PDF Generation failed.");
-        } finally {
-            template.style.left = '-9999px';
-        }
+        await generateMultiPagePDF('pdfTemplateInternal', `${surname}_Internal_Survey.pdf`);
     });
 });
