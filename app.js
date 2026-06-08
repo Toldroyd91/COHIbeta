@@ -239,23 +239,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Customer PDF Button
+   // Customer PDF Button
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('clientName');
         const rawName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Valued Customer';
         const surname = rawName.split(' ').pop() || 'Customer';
         
+        // Grab all the dropdown and input values
         const size = document.getElementById('proposedSize')?.value || "TBC";
         const roof = document.getElementById('roofType')?.value || "TBC";
         const frame = document.getElementById('frameColour')?.value || "TBC";
         const designerName = document.getElementById('designerSelect')?.value || "Your Designer";
+        const bRegs = document.getElementById('buildingRegs')?.value || "No";
+        const pPerms = document.getElementById('planningPerms')?.value || "No";
+        const rDate = document.getElementById('revisitDate')?.value;
+        const rLoc = document.getElementById('revisitLocation')?.value;
         
+        // 1. GREETING & BASICS
         document.getElementById('lp-greeting').innerText = `Dear ${rawName}, thank you for your time today to discuss your exciting new project.`;
         document.getElementById('lp-size').innerText = `Based on our measurements, we are looking at a proposed size of approximately ${size}.`;
         document.getElementById('lp-roof').innerText = `We discussed utilizing the ${roof} system to ensure the space is perfect year-round.`;
         document.getElementById('lp-frame').innerText = `For the aesthetics, we have noted your preference for ${frame} frames.`;
-        document.getElementById('lp-designer-name').innerText = designerName;
+        
+        // 2. COMPLIANCE TEXT (Restored)
+        let compText = "";
+        if (bRegs === "Yes" || pPerms !== "No" && pPerms !== "") {
+            compText = `Your project will require some compliance oversight (Building Regs: ${bRegs}, Planning: ${pPerms}). Our team handles all of this for you.`;
+        } else {
+            compText = "Your project currently looks to be exempt from additional planning compliance, streamlining our timeline.";
+        }
+        document.getElementById('lp-compliance').innerText = compText;
 
+        // 3. REVISIT DATE TEXT (Restored)
+        const revisitEl = document.getElementById('lp-revisit');
+        if (revisitEl) {
+            if (rDate) {
+                revisitEl.innerText = `I look forward to our next catch-up scheduled for ${rDate}${rLoc ? ` at ${rLoc}` : ''}. We will go through your custom 3D designs together then. If you need anything before I next get in touch, please contact me on the details below.`;
+            } else {
+                revisitEl.innerText = `We haven't booked in a date for our next catch-up just yet, but as soon as we work out a time, we will get you scheduled in. If you need anything before I next get in touch, please contact me on the details below.`;
+            }
+        }
+
+        // 4. DESIGNER INFO & CONTACT (Restored)
+        document.getElementById('lp-designer-name').innerText = designerName;
+        
+        // Look up the designer's contact info from your profiles list
+        let designerPhone = "07700 900000"; // Default
+        let designerEmail = "designer@cohi.co.uk"; // Default
+        if (window.designerProfiles && window.designerProfiles[designerName]) {
+            designerPhone = window.designerProfiles[designerName].phone || designerPhone;
+            designerEmail = window.designerProfiles[designerName].email || designerEmail;
+        }
+        document.getElementById('lp-designer-contact').innerText = `${designerPhone} | ${designerEmail}`;
+
+        // 5. INJECT IMAGES SAFELY (Without CSS Grids)
         const allCustImages = [...uploadedImagesStore.misc, ...uploadedImagesStore.survey];
         const imagePage = document.getElementById('customerPdfImagePage');
         const imageGrid = document.getElementById('pdfCustomerImagesGrid');
@@ -263,15 +300,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (allCustImages.length > 0 && imagePage && imageGrid) {
             imagePage.style.display = 'block';
             imageGrid.innerHTML = allCustImages.map(imgSrc => 
-                `<img src="${imgSrc}" style="width: 100%; height: 200px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px;">`
+                `<div style="display: inline-block; width: 46%; margin: 1%; box-sizing: border-box;">
+                    <img src="${imgSrc}" style="width: 100%; height: 250px; object-fit: contain; border: 1px solid #ccc; border-radius: 4px; padding: 10px; background: #fff;">
+                </div>`
             ).join('');
         } else if (imagePage) {
             imagePage.style.display = 'none';
         }
 
+        // Generate the PDF
         await generateMultiPagePDF('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`);
     });
-
     // Internal PDF Button
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('clientName');
