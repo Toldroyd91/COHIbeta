@@ -62,6 +62,27 @@
     </header>
 
     <main class="main-container main-container--centered layout-wrapper">
+
+        <article class="card" id="cloudDashboard" style="display: none; border-color: var(--accent); background: #1E1E1E;">
+            <h2 class="card__title" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; margin-bottom: 15px; padding-bottom: 10px;">
+                <span style="color: #fff;">☁️ Cloud Workspace</span>
+                <span id="syncStatus" style="font-size: 0.85rem; color: #0dcaf0; font-weight: normal;">Connected</span>
+            </h2>
+            <div class="form-grid" style="align-items: end;">
+                <div class="form-group" style="flex-grow: 2;">
+                    <label class="form-group__label">Load Previous Survey:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="cloudDrafts" class="form-group__input">
+                            <option value="">Fetching drafts...</option>
+                        </select>
+                        <button id="loadCloudBtn" class="button button--secondary" style="white-space: nowrap;">Load Survey</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button id="saveCloudBtn" class="button" style="width: 100%; background: #28a745;">Save Draft to Cloud</button>
+                </div>
+            </div>
+        </article>
         
         <article class="card">
             <h2 class="card__title">Client Profile</h2>
@@ -314,11 +335,11 @@
     <script src="app.js"></script>
 
     <script type="module">
-        // Import Firebase SDKs directly via CDN
+        // 1. Import Auth AND Firestore SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Your specific project keys
         const firebaseConfig = {
             apiKey: "AIzaSyD-QrqKxjes9f1TgyJOffiQzSMRncf84L0",
             authDomain: "cohi-survey-engine.firebaseapp.com",
@@ -328,52 +349,144 @@
             appId: "1:208212115382:web:db7d4276b194f89a274b17"
         };
 
-        // Initialize Cloud Connection
+        // Initialize Firebase & Database
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
         // UI Elements
         const authOverlay = document.getElementById('authOverlay');
-        const authEmail = document.getElementById('authEmail');
-        const authPassword = document.getElementById('authPassword');
-        const authError = document.getElementById('authError');
+        const cloudDashboard = document.getElementById('cloudDashboard');
+        const syncStatus = document.getElementById('syncStatus');
+        let currentDrafts = {}; // Holds loaded data in memory
 
-        // Core Security Listener: Hides the app until logged in
+        // Core Security Listener
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Access Granted
                 authOverlay.style.display = 'none';
-                console.log("[Firebase] Encrypted session active for:", user.email);
+                cloudDashboard.style.display = 'block';
+                fetchCloudDrafts(user.uid);
             } else {
-                // Access Denied / Logged Out
                 authOverlay.style.display = 'flex';
-                authEmail.value = '';
-                authPassword.value = '';
+                cloudDashboard.style.display = 'none';
             }
+        });
+
+        // --- DATABASE LOGIC --- //
+
+        // Package all text and canvas data
+        const getFormState = () => {
+            const data = {};
+            // Grab all text inputs, dates, and dropdowns
+            document.querySelectorAll('.form-group__input').forEach(el => {
+                if (el.id && el.type !== 'file') data[el.id] = el.value;
+            });
+            // Grab canvas drawings (fabric.js)
+            const canvases = {};
+            if (window.appCanvases) {
+                for (let key in window.appCanvases) {
+                    canvases[key] = window.appCanvases[key].toJSON();
+                }
+            }
+            return { inputs: data, canvases: canvases };
+        };
+
+        // Restore data back into the app
+        const loadFormState = (payload) => {
+            if (payload.inputs) {
+                for (let key in payload.inputs) {
+                    const el = document.getElementById(key);
+                    if (el) el.value = payload.inputs[key];
+                }
+                // Trigger any dynamic label updates
+                document.querySelectorAll('.dyn-survey-select').forEach(el => el.dispatchEvent(new Event('change')));
+            }
+            if (payload.canvases && window.appCanvases) {
+                for (let key in payload.canvases) {
+                    if (window.appCanvases[key]) {
+                        window.appCanvases[key].loadFromJSON(payload.canvases[key], window.appCanvases[key].renderAll.bind(window.appCanvases[key]));
+                    }
+                }
+            }
+        };
+
+        // Fetch user's history from Firestore
+        async function fetchCloudDrafts(uid) {
+            syncStatus.innerText = "Syncing...";
+            syncStatus.style.color = "#ffc107";
+            const q = query(collection(db, "surveys"), where("userId", "==", uid));
+            try {
+                const querySnapshot = await getDocs(q);
+                const select = document.getElementById('cloudDrafts');
+                select.innerHTML = '<option value="">Select a saved survey...</option>';
+                currentDrafts = {};
+                
+                querySnapshot.forEach((doc) => {
+                    const draft = doc.data();
+                    currentDrafts[doc.id] = draft;
+                    let dateStr = draft.updatedAt ? new Date(draft.updatedAt.toDate()).toLocaleDateString() : 'Recent';
+                    select.innerHTML += `<option value="${doc.id}">${draft.clientName} (${dateStr})</option>`;
+                });
+                syncStatus.innerText = "Up to date";
+                syncStatus.style.color = "#0dcaf0";
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                syncStatus.innerText = "Sync Failed";
+                syncStatus.style.color = "#ff4444";
+            }
+        }
+
+        // Save Button Listener
+        document.getElementById('saveCloudBtn')?.addEventListener('click', async () => {
+            if (!auth.currentUser) return;
+            const clientName = document.getElementById('clientName').value.trim() || "Untitled Survey";
+            // Create a clean URL-friendly ID for the database
+            const surveyId = clientName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString().slice(-4);
+            
+            syncStatus.innerText = "Uploading...";
+            syncStatus.style.color = "#ffc107";
+            
+            try {
+                await setDoc(doc(db, "surveys", surveyId), {
+                    userId: auth.currentUser.uid,
+                    clientName: clientName,
+                    data: getFormState(),
+                    updatedAt: serverTimestamp()
+                });
+                syncStatus.innerText = "Saved to Cloud";
+                syncStatus.style.color = "#28a745";
+                fetchCloudDrafts(auth.currentUser.uid); // Refresh the dropdown
+            } catch (error) {
+                console.error("Save Error:", error);
+                syncStatus.innerText = "Error Saving";
+                syncStatus.style.color = "#ff4444";
+            }
+        });
+
+        // Load Button Listener
+        document.getElementById('loadCloudBtn')?.addEventListener('click', () => {
+            const selectedId = document.getElementById('cloudDrafts').value;
+            if (!selectedId || !currentDrafts[selectedId]) return alert("Please select a survey from the dropdown.");
+            
+            loadFormState(currentDrafts[selectedId].data);
+            syncStatus.innerText = "Survey Loaded";
+            syncStatus.style.color = "#28a745";
         });
 
         // Authentication Handlers
         document.getElementById('loginBtn')?.addEventListener('click', () => {
-            authError.style.display = 'none';
-            signInWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value)
-                .catch(error => { 
-                    authError.innerText = error.message.replace('Firebase: ', ''); 
-                    authError.style.display = 'block'; 
-                });
+            document.getElementById('authError').style.display = 'none';
+            signInWithEmailAndPassword(auth, document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value)
+                .catch(err => { document.getElementById('authError').innerText = err.message.replace('Firebase: ', ''); document.getElementById('authError').style.display = 'block'; });
         });
 
         document.getElementById('registerBtn')?.addEventListener('click', () => {
-            authError.style.display = 'none';
-            createUserWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value)
-                .catch(error => { 
-                    authError.innerText = error.message.replace('Firebase: ', ''); 
-                    authError.style.display = 'block'; 
-                });
+            document.getElementById('authError').style.display = 'none';
+            createUserWithEmailAndPassword(auth, document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value)
+                .catch(err => { document.getElementById('authError').innerText = err.message.replace('Firebase: ', ''); document.getElementById('authError').style.display = 'block'; });
         });
 
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-            signOut(auth).catch(error => console.error("Logout Error:", error));
-        });
+        document.getElementById('logoutBtn')?.addEventListener('click', () => signOut(auth));
     </script>
 </body>
 </html>
