@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- 2. AUTOSAVE FUNCTIONALITY ---
-    // Safely saves every text/number/select field to localStorage
     const saveForms = () => {
         const data = {};
         document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => {
@@ -39,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('resetFormBtn')?.addEventListener('click', () => {
         if(confirm("Are you sure you want to clear the entire form for a new appointment?")) {
             localStorage.removeItem('surveyAppData');
-            // Retain designer profiles, just clear the form
             location.reload();
         }
     });
@@ -72,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.dyn-survey-select').forEach(sel => {
         sel.addEventListener('change', updateDynamicLabel);
     });
-    updateDynamicLabel(); // Run once on load
+    updateDynamicLabel();
 
     // --- 4. PROFILE MANAGER ---
     window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
@@ -106,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         saveForms();
     });
 
-    // --- 5. FABRIC CANVAS V2 ---
+    // --- 5. FABRIC CANVAS V2 (WITH IN-MEMORY COMPRESSION) ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
@@ -118,7 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         window.appCanvases[id] = fCanvas;
 
-        // Load existing canvas data if any
         if(savedData['canvas_' + id]) {
             fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
         }
@@ -137,13 +134,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = function(f) {
-                    fabric.Image.fromURL(f.target.result, function(img) {
-                        fCanvas.clear();
-                        const scale = Math.min(fCanvas.width / img.width, fCanvas.height / img.height);
-                        img.set({ scaleX: scale, scaleY: scale, originX: 'center', originY: 'center', left: fCanvas.width/2, top: fCanvas.height/2, selectable: false });
-                        fCanvas.add(img); fCanvas.sendToBack(img); saveCanvasState();
-                    });
+                reader.onload = function(event) {
+                    
+                    // --- COMPRESSION ENGINE ---
+                    const imgObj = new Image();
+                    imgObj.onload = () => {
+                        const MAX_SIZE = 800; // Limits dimension to keep payload under 1MB limit
+                        let width = imgObj.width;
+                        let height = imgObj.height;
+
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
+                        }
+
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = width;
+                        tempCanvas.height = height;
+                        const ctx = tempCanvas.getContext('2d');
+                        ctx.drawImage(imgObj, 0, 0, width, height);
+
+                        const compressedDataUrl = tempCanvas.toDataURL('image/jpeg', 0.6); // 60% quality compression
+
+                        // --- FABRIC HANDOFF ---
+                        fabric.Image.fromURL(compressedDataUrl, function(img) {
+                            fCanvas.clear();
+                            const scale = Math.min(fCanvas.width / img.width, fCanvas.height / img.height);
+                            img.set({ scaleX: scale, scaleY: scale, originX: 'center', originY: 'center', left: fCanvas.width/2, top: fCanvas.height/2, selectable: false });
+                            fCanvas.add(img); 
+                            fCanvas.sendToBack(img); 
+                            saveCanvasState();
+                        });
+                    };
+                    imgObj.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             });
@@ -229,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const template = document.getElementById(templateId);
         if(!template) return alert("Error: Template missing");
 
-        // Prepare Template: Reveal without affecting scroll flow
         template.style.display = 'block';
         template.style.position = 'absolute';
         template.style.top = '0px';
@@ -242,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
             
-            // Render the FULL template in one go using scrollHeight
             const canvas = await html2canvas(template, { 
                 scale: 2, 
                 useCORS: true, 
@@ -253,17 +281,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
             
-            // Calculate total image height in PDF millimeters
             const canvasHeightInMM = (canvas.height * pdfWidth) / canvas.width;
             
             let heightLeft = canvasHeightInMM;
             let position = 0;
             
-            // Print first page slice
             pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, canvasHeightInMM);
             heightLeft -= pdfHeight;
             
-            // Loop for additional pages if document is longer than A4
             while (heightLeft > 0) {
                 position = position - pdfHeight;
                 pdf.addPage();
@@ -295,7 +320,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const rDate = document.getElementById('revisitDate')?.value;
         const rLoc = document.getElementById('revisitLocation')?.value;
         
-        // Populate text fields
         document.getElementById('lp-greeting').innerText = `Dear ${rawName}, thank you for your time today to discuss your exciting new project.`;
         document.getElementById('lp-size').innerText = `Based on our measurements, we are looking at a proposed size of approximately ${size}.`;
         document.getElementById('lp-roof').innerText = `We discussed utilizing the ${roof} system to ensure the space is perfect year-round.`;
@@ -328,7 +352,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('lp-designer-contact').innerText = `${designerPhone} | ${designerEmail}`;
 
-        // Populate inline-block images
         const allCustImages = [...uploadedImagesStore.misc, ...uploadedImagesStore.survey];
         const imagePage = document.getElementById('customerPdfImagePage');
         const imageGrid = document.getElementById('pdfCustomerImagesGrid');
