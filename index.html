@@ -14,6 +14,25 @@
         </div>
     </div>
 
+    <div id="authOverlay" class="modal-overlay" style="display: flex; flex-direction: column; background: var(--base-bg); z-index: 99998; justify-content: center; align-items: center;">
+        <div class="card" style="max-width: 400px; width: 90%; text-align: center; margin: 0;">
+            <h2 class="card__title" style="border: none; margin-bottom: 10px;">ENGINE ACCESS</h2>
+            <p style="color: var(--secondary-text); margin-bottom: 25px; font-size: 0.9rem;">Authorized Designers Only</p>
+            
+            <div class="form-group" style="text-align: left;">
+                <input type="email" id="authEmail" class="form-group__input" placeholder="Designer Email">
+            </div>
+            <div class="form-group" style="text-align: left; margin-top: 15px;">
+                <input type="password" id="authPassword" class="form-group__input" placeholder="Password">
+            </div>
+            
+            <button id="loginBtn" class="button" style="width: 100%; margin-top: 25px; margin-bottom: 15px;">Secure Log In</button>
+            <button id="registerBtn" class="button button--secondary" style="width: 100%;">Register New Designer</button>
+            
+            <p id="authError" style="color: #ff4444; margin-top: 15px; font-size: 0.85rem; display: none;"></p>
+        </div>
+    </div>
+
     <header class="navbar navbar--top" id="mainHeader">
         <div class="navbar__container header-container">
             <h1 class="navbar__title">Survey Pro</h1>
@@ -30,8 +49,13 @@
                 </select>
                 <input list="designerList" id="designerSelect" class="form-group__input form-group__input--touch nav-input" placeholder="Designer..." style="width: 140px;">
                 <datalist id="designerList"></datalist>
+                
                 <button id="openProfileManagerBtn" class="nav-btn btn-icon tool-btn" style="background: var(--input-bg); border: 1px solid #444;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+                
+                <button id="logoutBtn" class="nav-btn btn-icon tool-btn" style="background: var(--input-bg); border: 1px solid #444; color: #ff4444; margin-left: 5px;" title="Log Out">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
             </div>
         </div>
@@ -288,5 +312,68 @@
     
     <script src="designers.js"></script>
     <script src="app.js"></script>
+
+    <script type="module">
+        // Import Firebase SDKs directly via CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Your specific project keys
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-QrqKxjes9f1TgyJOffiQzSMRncf84L0",
+            authDomain: "cohi-survey-engine.firebaseapp.com",
+            projectId: "cohi-survey-engine",
+            storageBucket: "cohi-survey-engine.firebasestorage.app",
+            messagingSenderId: "208212115382",
+            appId: "1:208212115382:web:db7d4276b194f89a274b17"
+        };
+
+        // Initialize Cloud Connection
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // UI Elements
+        const authOverlay = document.getElementById('authOverlay');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authError = document.getElementById('authError');
+
+        // Core Security Listener: Hides the app until logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Access Granted
+                authOverlay.style.display = 'none';
+                console.log("[Firebase] Encrypted session active for:", user.email);
+            } else {
+                // Access Denied / Logged Out
+                authOverlay.style.display = 'flex';
+                authEmail.value = '';
+                authPassword.value = '';
+            }
+        });
+
+        // Authentication Handlers
+        document.getElementById('loginBtn')?.addEventListener('click', () => {
+            authError.style.display = 'none';
+            signInWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value)
+                .catch(error => { 
+                    authError.innerText = error.message.replace('Firebase: ', ''); 
+                    authError.style.display = 'block'; 
+                });
+        });
+
+        document.getElementById('registerBtn')?.addEventListener('click', () => {
+            authError.style.display = 'none';
+            createUserWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value)
+                .catch(error => { 
+                    authError.innerText = error.message.replace('Firebase: ', ''); 
+                    authError.style.display = 'block'; 
+                });
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            signOut(auth).catch(error => console.error("Logout Error:", error));
+        });
+    </script>
 </body>
 </html>
