@@ -22,6 +22,10 @@ jobs:
         run: npm install
         working-directory: ./functions
 
+      - name: Create Environment Variables
+        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        working-directory: ./functions
+
       - name: Authenticate and Deploy to Firebase
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
