@@ -1,596 +1,656 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>COHI Survey Pro</title>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("[Diagnostics] Blueprint Enterprise Engine Loaded (Modular V2).");
+
+    // --- 1. PROFILE MANAGER ---
+    window.designerProfiles = JSON.parse(localStorage.getItem('savedDesignerProfiles')) || {};
+    const refreshDropdown = () => {
+        const list = document.getElementById('designerList');
+        if (list) list.innerHTML = Object.keys(window.designerProfiles).map(n => `<option value="${n}">`).join('');
+    };
+    refreshDropdown();
+
+    document.getElementById('openProfileManagerBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const cur = document.getElementById('designerSelect').value;
+        if (window.designerProfiles[cur]) {
+            document.getElementById('profName').value = cur;
+            document.getElementById('profEmail').value = window.designerProfiles[cur].email;
+            document.getElementById('profPhone').value = window.designerProfiles[cur].phone;
+        }
+        document.getElementById('profileModal').style.display = 'flex';
+    });
+
+    document.getElementById('closeProfileBtn')?.addEventListener('click', () => document.getElementById('profileModal').style.display = 'none');
     
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX'); 
-    </script>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#15202b">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Survey Pro">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('profName').value.trim();
+        if (!name) return alert("Enter designer name");
+        window.designerProfiles[name] = { email: document.getElementById('profEmail').value, phone: document.getElementById('profPhone').value };
+        localStorage.setItem('savedDesignerProfiles', JSON.stringify(window.designerProfiles));
+        document.getElementById('designerSelect').value = name;
+        refreshDropdown();
+        document.getElementById('profileModal').style.display = 'none';
+    });
 
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-    <div id="splashScreen">
-        <div class="splash-content">
-            <h1 class="splash-title" style="color: #fff; text-align: center; font-family: sans-serif;">PREDESIGN ENGINE</h1>
-        </div>
-    </div>
-
-    <div id="authOverlay" class="modal-overlay" style="display: flex; flex-direction: column; background: var(--base-bg); z-index: 99998; justify-content: center; align-items: center;">
-        <div class="card" style="max-width: 400px; width: 90%; text-align: center; margin: 0;">
-            <h2 class="card__title" style="border: none; margin-bottom: 10px;">ENGINE ACCESS</h2>
-            
-            <div id="loginView">
-                <div class="form-group"><input type="email" id="authEmail" class="form-group__input" placeholder="Email Address"></div>
-                <div class="form-group mt-10"><input type="password" id="authPassword" class="form-group__input" placeholder="Password"></div>
-                <button id="loginBtn" class="button" style="width: 100%; margin-top: 25px;">Secure Log In</button>
-                <button id="showRegisterBtn" class="button button--secondary" style="width: 100%; margin-top: 10px;">Register New Designer</button>
-            </div>
-
-            <div id="registerView" style="display: none; text-align: left;">
-                <div class="form-group">
-                    <select id="regBrand" class="form-group__input">
-                        <option value="">Select Brand...</option>
-                        <option value="Yorkshire Windows">Yorkshire Windows</option>
-                        <option value="CO Home Improvements">CO Home Improvements</option>
-                        <option value="Clearview">Clearview</option>
-                        <option value="Orion Windows">Orion Windows</option>
-                        <option value="Planet">Planet</option>
-                        <option value="Trent Valley Windows">Trent Valley Windows</option>
-                        <option value="West Yorkshire Windows">West Yorkshire Windows</option>
-                    </select>
-                </div>
-                <div class="form-group mt-10"><input type="text" id="regName" class="form-group__input" placeholder="Full Name"></div>
-                <div class="form-group mt-10"><input type="tel" id="regPhone" class="form-group__input" placeholder="Contact Number"></div>
-                <div class="form-group mt-10"><textarea id="regBio" class="form-group__input" rows="2" placeholder="Short Designer Bio"></textarea></div>
-                <div class="form-group mt-10"><input type="email" id="regEmail" class="form-group__input" placeholder="Email Address"></div>
-                <div class="form-group mt-10"><input type="password" id="regPassword" class="form-group__input" placeholder="Create Password"></div>
-                
-                <button id="registerBtn" class="button" style="width: 100%; margin-top: 20px;">Create Profile & Enter</button>
-                <button id="cancelRegisterBtn" class="button button--secondary" style="width: 100%; margin-top: 10px;">Back to Login</button>
-            </div>
-            
-            <p id="authError" style="color: #ff4444; margin-top: 15px; font-size: 0.85rem; display: none;"></p>
-            <p id="appVersionDisplay" style="color: #666; font-size: 0.75rem; margin-top: 20px; border-top: 1px solid #333; padding-top: 10px;">Loading Build Version...</p>
-        </div>
-    </div>
-
-    <header class="navbar navbar--top" id="mainHeader">
-        <div class="navbar__container header-container" style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <h1 class="navbar__title">Survey Pro</h1>
-                <span id="activeDesignerProfile" style="color: var(--accent); font-size: 0.9rem; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; display: none;"></span>
-            </div>
-            <div class="nav-controls">
-                <button id="logoutBtn" class="nav-btn btn-icon tool-btn" style="background: var(--input-bg); border: 1px solid #444; color: #ff4444;" title="Log Out">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main id="designerApp" class="main-container main-container--centered layout-wrapper" style="display: none;">
-
-        <article class="card" id="cloudDashboard" style="border-color: var(--accent); background: #1E1E1E;">
-            <h2 class="card__title" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; margin-bottom: 15px; padding-bottom: 10px;">
-                <span style="color: #fff;">☁️ Cloud Workspace</span>
-                <span id="syncStatus" style="font-size: 0.85rem; color: #0dcaf0; font-weight: normal;">Connected</span>
-            </h2>
-            <div class="form-grid" style="align-items: end;">
-                <div class="form-group" style="flex-grow: 2;">
-                    <label class="form-group__label">Load Previous Survey:</label>
-                    <div style="display: flex; gap: 10px;">
-                        <select id="cloudDrafts" class="form-group__input">
-                            <option value="">Fetching drafts...</option>
-                        </select>
-                        <button id="loadCloudBtn" class="button button--secondary" style="white-space: nowrap;">Load Survey</button>
-                    </div>
-                </div>
-            </div>
-        </article>
-        
-        <article class="card">
-            <h2 class="card__title">Client Profile</h2>
-            <div class="form-grid">
-                <div class="form-group"><label class="form-group__label">Name *</label><input type="text" id="clientName" class="form-group__input" required></div>
-                <div class="form-group"><label class="form-group__label">Phone</label><input type="tel" id="clientNum" class="form-group__input"></div>
-                <div class="form-group"><label class="form-group__label">Postcode *</label><input type="text" id="postCode" class="form-group__input" required></div>
-                <div class="form-group"><label class="form-group__label">Consultation Date</label><input type="date" id="apptDate" class="form-group__input"></div>
-                <div class="form-group"><label class="form-group__label">Revisit Date</label><input type="date" id="revisitDate" class="form-group__input"></div>
-                <div class="form-group"><label class="form-group__label">Revisit Location</label><input type="text" id="revisitLocation" class="form-group__input" placeholder="e.g. Showroom"></div>
-            </div>
-        </article>
-
-        <article class="card">
-            <h2 class="card__title">Elevations & Markup</h2>
-            
-            <div class="canvas-group" data-id="frontelevation">
-                <div class="custom-file-upload">
-                    <input type="file" id="front-cam" class="camera-input hidden-input" accept="image/*">
-                    <label for="front-cam" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Front Elevation</label>
-                </div>
-                <div class="canvas-container"><canvas id="canvas-frontelevation" width="600" height="400"></canvas></div>
-                <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
-                    <div class="tool-section">
-                        <button type="button" class="tool-btn freehand-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                        <button type="button" class="tool-btn highlight-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg></button>
-                        <button type="button" class="tool-btn text-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></button>
-                    </div>
-                    <div class="tool-section flex-right">
-                        <button type="button" class="tool-btn undo-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg></button>
-                        <button type="button" class="tool-btn clear-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="canvas-group mt-30" data-id="sideelevation">
-                <div class="custom-file-upload">
-                    <input type="file" id="side-cam" class="camera-input hidden-input" accept="image/*">
-                    <label for="side-cam" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Side Elevation</label>
-                </div>
-                <div class="canvas-container"><canvas id="canvas-sideelevation" width="600" height="400"></canvas></div>
-                <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
-                    <div class="tool-section">
-                        <button type="button" class="tool-btn freehand-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                        <button type="button" class="tool-btn highlight-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg></button>
-                        <button type="button" class="tool-btn text-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></button>
-                    </div>
-                    <div class="tool-section flex-right">
-                        <button type="button" class="tool-btn undo-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg></button>
-                        <button type="button" class="tool-btn clear-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="canvas-group mt-30" data-id="rearelevation">
-                <div class="custom-file-upload">
-                    <input type="file" id="rear-cam" class="camera-input hidden-input" accept="image/*">
-                    <label for="rear-cam" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Rear Elevation</label>
-                </div>
-                <div class="canvas-container"><canvas id="canvas-rearelevation" width="600" height="400"></canvas></div>
-                <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
-                    <div class="tool-section">
-                        <button type="button" class="tool-btn freehand-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                        <button type="button" class="tool-btn highlight-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg></button>
-                        <button type="button" class="tool-btn text-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></button>
-                    </div>
-                    <div class="tool-section flex-right">
-                        <button type="button" class="tool-btn undo-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg></button>
-                        <button type="button" class="tool-btn clear-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    </div>
-                </div>
-            </div>
-        </article>
-
-        <article class="card">
-            <h2 class="card__title">Access & Logistics</h2>
-            <div class="form-grid">
-                <div class="form-group"><label class="form-group__label">Wheelbarrow difficulties?</label><select id="accessDifficult" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Narrowest access point (mm):</label><input type="number" id="accessWidth" class="form-group__input"></div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-group__label">Upload access photos:</label>
-                    <div class="custom-file-upload mt-10">
-                        <input type="file" id="accessPhotos" class="hidden-input" accept="image/*" multiple>
-                        <label for="accessPhotos" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Select Access Images</label>
-                    </div>
-                </div>
-            </div>
-            
-            <h3 class="section-subtitle mt-30" style="color: var(--accent); margin-bottom: 15px;">Site Survey Basics</h3>
-            <div class="form-grid">
-                <div class="form-group"><label class="form-group__label">DPC Depth (mm):</label><input type="number" id="dpcDepth" class="form-group__input"></div>
-                <div class="form-group"><label class="form-group__label">House material:</label><select id="houseMaterial" class="form-group__input"><option value="">Select...</option><option value="Brick">Brick</option><option value="Stone">Stone</option><option value="Render">Render</option><option value="Other">Other</option></select></div>
-                <div class="form-group"><label class="form-group__label">Fascia Height (mm):</label><input type="text" id="fasciaHeight" class="form-group__input"></div>
-                <div class="form-group"><label class="form-group__label">Air Bricks? How many?</label><select id="airbricks" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
-                <div class="form-group" style="grid-column: 1 / -1;"><label class="form-group__label">Wall Obstacles:</label><textarea id="wallObstacles" class="form-group__input" rows="2"></textarea></div>
-            </div>
-
-            <div class="form-grid mt-30">
-                <div class="form-group"><label class="form-group__label">Trees within 30m?</label><select id="treesExist" class="form-group__input dyn-survey-select"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Manholes visible?</label><select id="manholeExist" class="form-group__input dyn-survey-select"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Weep vents visible?</label><select id="weepventsExist" class="form-group__input dyn-survey-select"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Pipes (RWP/SVP) exist?</label><select id="pipesExist" class="form-group__input dyn-survey-select"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-            </div>
-            
-            <div class="form-group" style="margin-top: 25px; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #333;">
-                <label id="dynamicSurveyUploadLabel" class="form-group__label" style="color: var(--accent); margin-bottom: 10px;">Site Survey Photos (General)</label>
-                <div class="custom-file-upload">
-                    <input type="file" id="surveyPhotos" class="hidden-input" accept="image/*" multiple>
-                    <label for="surveyPhotos" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Upload Survey Photos</label>
-                </div>
-            </div>
-        </article>
-
-        <article class="card">
-            <h2 class="card__title">Design Ideas</h2>
-            <div class="form-grid">
-                <div class="form-group"><label class="form-group__label">Build Type *</label><select id="buildType" class="form-group__input" required><option value="">Select...</option><option value="Conservatory">Conservatory</option><option value="Extension">Extension</option><option value="Porch">Porch</option><option value="Roof and Frame">Roof and Frame</option><option value="Other">Other</option></select></div>
-                <div class="form-group"><label class="form-group__label">Edwardian Roof Type:</label>
-                    <select id="roofType" class="form-group__input">
-                        <option value="">Select...</option>
-                        <option value="Ultra380">Ultra380</option>
-                        <option value="LivinRoof">LivinRoof</option>
-                        <option value="Glass Roof">Glass Roof</option>
-                        <option value="Flat Roof">Flat Roof</option>
-                        <option value="Edwardian Roof">Edwardian Roof</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group"><label class="form-group__label">Proposed Size (mm):</label><input type="text" id="proposedSize" class="form-group__input"></div>
-                <div class="form-group">
-                    <label class="form-group__label">Frame Colour:</label>
-                    <select id="frameColour" class="form-group__input">
-                        <option value="">Select...</option><option value="White">White</option><option value="Grey Foil">Grey Foil</option><option value="Rosewood">Rosewood</option><option value="Light Oak">Light Oak</option><option value="Black Brown Foil">Black Brown Foil</option><option value="Cream Foil">Cream Foil</option><option value="Chartwell Green Foil">Chartwell Green Foil</option><option value="Agate Grey">Agate Grey</option>
-                    </select>
-                </div>
-                <div class="form-group"><label class="form-group__label">Building Regs Required?</label><select id="buildingRegs" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Planning Permission Required?</label><select id="planningPerms" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="Full Planning">Full Planning</option></select></div>
-                
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px;">
-                        <label class="form-group__label" style="margin: 0;">Designer Notes (Raw):</label>
-                        <button id="aiRewriteBtn" type="button" class="button button--secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #2c2c2c; border-color: #555;">✨ AI Polish</button>
-                    </div>
-                    <textarea id="designerNotes" class="form-group__input" rows="4" placeholder="Type raw internal notes here..."></textarea>
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
-                    <label class="form-group__label" style="color: #0dcaf0;">Customer Facing Notes (AI Generated):</label>
-                    <textarea id="customerNotes" class="form-group__input" rows="3" placeholder="Polished text for the customer PDF will appear here..."></textarea>
-                </div>
-            </div>
-
-            <div class="canvas-group mt-30" data-id="designersketch">
-                <div class="custom-file-upload">
-                    <input type="file" id="sketch-cam" class="camera-input hidden-input" accept="image/*">
-                    <label for="sketch-cam" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Upload Base Sketch</label>
-                </div>
-                <div class="canvas-container"><canvas id="canvas-designersketch" width="600" height="400"></canvas></div>
-                <div class="canvas-controls">
-                    <button type="button" class="tool-btn lock-btn canvas-locked active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
-                    <div class="tool-section">
-                        <button type="button" class="tool-btn freehand-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                        <button type="button" class="tool-btn highlight-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg></button>
-                        <button type="button" class="tool-btn text-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></button>
-                    </div>
-                    <div class="tool-section flex-right">
-                        <button type="button" class="tool-btn undo-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg></button>
-                        <button type="button" class="tool-btn clear-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    </div>
-                </div>
-            </div>
-        </article>
-
-        <article class="card">
-            <h2 class="card__title">Misc</h2>
-            <div class="form-group" style="margin-top:15px;">
-                <label class="form-group__label">Additional Photos (Upload multiple):</label>
-                <div class="custom-file-upload mt-10">
-                    <input type="file" id="miscPhotos" class="hidden-input" accept="image/*" multiple>
-                    <label for="miscPhotos" class="upload-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Select Misc Images</label>
-                </div>
-            </div>
-        </article>
-
-        <div style="display: flex; gap: 15px; margin-top: 34px; flex-wrap: wrap;">
-            <button id="generateCustomerPdfBtn" class="button button--secondary" style="width: 48%;">Facts Sheet PDF</button>
-            <button id="generateHybridPdfBtn" class="button" style="width: 48%; background: #0dcaf0; color: #000; border-color: #0dcaf0;">Customer Design Survey</button>
-            <button id="generateInternalPdfBtn" class="button" style="width: 100%; margin-top: 10px;">Full Technical Survey PDF</button>
-        </div>
-        <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
-    </main>
-
-    <main id="adminDashboard" class="main-container main-container--centered layout-wrapper" style="display: none;">
-        <article class="card" style="border-color: #ff9800; background: #1E1E1E;">
-            <h2 class="card__title" style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
-                <span style="color: #ff9800;">📊 Manager Intelligence Hub</span>
-            </h2>
-
-            <div id="adminStats" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #ff9800;">
-                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Total Surveys</h4>
-                    <p id="statTotal" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
-                </div>
-                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #0dcaf0;">
-                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Active Designers</h4>
-                    <p id="statDesigners" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
-                </div>
-                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #28a745;">
-                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Today's Leads</h4>
-                    <p id="statToday" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <input type="text" id="adminSearch" class="form-group__input" placeholder="Search leads by Client Name or Postcode..." style="flex-grow: 1;">
-                <button id="adminExportBtn" class="button" style="background: #ff9800; white-space: nowrap;">Export CSV</button>
-            </div>
-
-            <div id="adminLeadsContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
-                <p style="color: #888; text-align: center;">Fetching company data...</p>
-            </div>
-        </article>
-    </main>
-
-    <div id="pdfTemplateCustomer" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
-        <div class="pdf-page" style="text-align: left; padding: 30px 50px; font-size: 15px; line-height: 1.8; color: #333; min-height: 1000px;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="color: #0F3759; margin-bottom: 0; font-size: 26px; letter-spacing: 1px; border-bottom: 2px solid #0F3759; padding-bottom: 10px;">PROJECT FACTS SHEET</h1>
-            </div>
-            <p id="lp-greeting" style="margin-bottom: 25px;"></p>
-            <p id="lp-size" style="margin-bottom: 25px;"></p>
-            <p id="lp-roof" style="margin-bottom: 25px;"></p>
-            <p id="lp-frame" style="margin-bottom: 25px;"></p>
-            <p id="lp-compliance" style="margin-bottom: 25px;"></p>
-            <div id="lp-custom-notes-box" style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-left: 4px solid #0F3759; display: none;">
-                <h4 style="margin: 0 0 10px 0; color: #0F3759;">Design Notes:</h4>
-                <p id="lp-custom-notes" style="margin: 0;"></p>
-            </div>
-            <p id="lp-revisit" style="margin-bottom: 40px;"></p>
-            <p style="margin-bottom: 20px;">Best regards,</p>
-            <p style="margin-bottom: 5px; font-weight: bold; font-size: 18px; color: #0F3759;" id="lp-designer-name"></p>
-            <p style="margin-bottom: 15px; font-size: 15px; color: #666;">Design Consultant</p>
-            <p style="margin-top: 5px; font-size: 14px;" id="lp-designer-contact"></p>
-        </div>
-    </div>
-
-    <div id="pdfTemplateHybrid" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
-        <div class="pdf-page" style="text-align: center; padding-top: 20px; min-height: 1000px;">
-            <div>
-                <h1 style="color: #0F3759; font-size: 30px; margin: 0 0 10px 0; font-weight: 700; text-transform: uppercase;">Customer Design Survey</h1>
-                <div style="width: 80px; height: 4px; background: #0F3759; margin: 0 auto 30px auto; border-radius: 2px;"></div>
-            </div>
-            <div style="background: #f8f9fa; border-left: 5px solid #0F3759; padding: 25px; text-align: left; border-radius: 4px; margin-top: 30px;">
-                <h3 style="margin: 0 0 15px 0; color: #0F3759; font-size: 18px; text-transform: uppercase;">Project Details</h3>
-                <div style="width: 100%; font-size: 14px; color: #495057;">
-                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Customer Name:</strong> <span id="hybPdfName" style="color:#000; font-weight:600;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Date:</strong> <span id="hybPdfDate" style="color:#000; font-weight:600;"></span></div>
-                </div>
-            </div>
-            <div style="margin-top: 30px; text-align: left;">
-                <p id="hyb-greeting" style="margin-bottom: 20px;"></p>
-                <p id="hyb-size" style="margin-bottom: 20px;"></p>
-                <p id="hyb-roof" style="margin-bottom: 20px;"></p>
-                <p id="hyb-frame" style="margin-bottom: 20px;"></p>
-                <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-left: 4px solid #0F3759;">
-                    <h4 style="margin: 0 0 10px 0; color: #0F3759;">Design Notes:</h4>
-                    <p id="hyb-custom-notes" style="margin: 0;"></p>
-                </div>
-            </div>
-        </div>
-        <div class="pdf-page" id="hybridPdfImagePage" style="text-align: left; padding: 30px 50px; font-size: 15px; display: none; min-height: 1000px;">
-            <h2 style="color: #0F3759; font-size: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Site Imagery</h2>
-            <div id="pdfHybridImagesGrid" style="margin-top: 20px; width: 100%;"></div>
-        </div>
-    </div>
-
-    <div id="pdfTemplateInternal" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
-        <div class="pdf-page" style="text-align: center; padding-top: 20px; min-height: 1000px;">
-            <div>
-                <h1 style="color: #0F3759; font-size: 30px; margin: 0 0 10px 0; font-weight: 700; text-transform: uppercase;">Technical Survey Report</h1>
-                <div style="width: 80px; height: 4px; background: #0F3759; margin: 0 auto 30px auto; border-radius: 2px;"></div>
-            </div>
-            <div style="background: #f8f9fa; border-left: 5px solid #0F3759; padding: 25px; text-align: left; border-radius: 4px; margin-top: 30px;">
-                <h3 style="margin: 0 0 15px 0; color: #0F3759; font-size: 18px; text-transform: uppercase;">Customer Details</h3>
-                <div style="width: 100%; font-size: 14px; color: #495057;">
-                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Customer Name:</strong> <span id="intPdfName" style="color:#000; font-weight:600;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Date of Survey:</strong> <span id="intPdfDate" style="color:#000; font-weight:600;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Assigned Designer:</strong> <span id="intPdfDesigner" style="color:#000; font-weight:600;"></span></div>
-                </div>
-            </div>
-            <div style="margin-top: 30px; text-align: left;">
-                <h3 style="color: #0F3759; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Project Specifications</h3>
-                <p style="margin: 10px 0;"><strong>Build Type:</strong> <span id="intPdfBuild"></span></p>
-                <p style="margin: 10px 0;"><strong>Roof:</strong> <span id="intPdfRoof"></span></p>
-                <p style="margin: 10px 0;"><strong>Raw Notes:</strong> <span id="intPdfNotes"></span></p>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    
-    <script src="app.js"></script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const app = initializeApp({
-            apiKey: "AIzaSyD-QrqKxjes9f1TgyJOffiQzSMRncf84L0",
-            authDomain: "cohi-survey-engine.firebaseapp.com",
-            projectId: "cohi-survey-engine",
-            storageBucket: "cohi-survey-engine.firebasestorage.app",
-            messagingSenderId: "208212115382",
-            appId: "1:208212115382:web:db7d4276b194f89a274b17"
+    // --- 2. AUTOSAVE ENGINE ---
+    document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(input => {
+        const saved = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+        if (saved[input.id]) input.value = saved[input.id];
+        input.addEventListener('input', () => {
+            const data = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+            data[input.id] = input.value;
+            localStorage.setItem('surveyAppData', JSON.stringify(data));
         });
-        const auth = getAuth(app); const db = getFirestore(app);
+    });
 
-        // Dynamic Version Injection
-        document.getElementById('appVersionDisplay').innerText = "Engine Build: " + new Date(document.lastModified).toLocaleString();
+    document.getElementById('resetFormBtn')?.addEventListener('click', () => {
+        if(confirm("Are you sure you want to clear the entire form for a new appointment?")) {
+            localStorage.removeItem('surveyAppData');
+            location.reload();
+        }
+    });
 
-        const authOverlay = document.getElementById('authOverlay');
-        const designerApp = document.getElementById('designerApp');
-        const adminDashboard = document.getElementById('adminDashboard');
-        const activeProfileUI = document.getElementById('activeDesignerProfile');
-
-        // Toggle UI
-        document.getElementById('showRegisterBtn')?.addEventListener('click', () => { document.getElementById('loginView').style.display = 'none'; document.getElementById('registerView').style.display = 'block'; });
-        document.getElementById('cancelRegisterBtn')?.addEventListener('click', () => { document.getElementById('registerView').style.display = 'none'; document.getElementById('loginView').style.display = 'block'; });
-
-        // Security Routing
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                authOverlay.style.display = 'none';
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data(); window.currentUserProfile = userData;
-                    if (userData.role === 'admin') {
-                        designerApp.style.display = 'none'; adminDashboard.style.display = 'block';
-                        activeProfileUI.innerHTML = `MANAGER HUB | ${userData.name}`; activeProfileUI.style.display = 'inline';
-                        fetchAdminLeads();
-                    } else {
-                        adminDashboard.style.display = 'none'; designerApp.style.display = 'block';
-                        activeProfileUI.innerHTML = `${userData.brand} | ${userData.name}`; activeProfileUI.style.display = 'inline';
-                        fetchCloudDrafts(user.uid);
-                    }
+    // --- 3. VOICE DICTATION ---
+    const notesArea = document.getElementById('designerNotes');
+    const dictateBtn = document.getElementById('dictateBtn');
+    if (dictateBtn) {
+        if ('webkitSpeechRecognition' in window) {
+            const rec = new webkitSpeechRecognition();
+            rec.continuous = true; rec.interimResults = true;
+            rec.onresult = (e) => {
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) notesArea.value += e.results[i][0].transcript + '. ';
                 }
-            } else { authOverlay.style.display = 'flex'; designerApp.style.display = 'none'; adminDashboard.style.display = 'none'; activeProfileUI.style.display = 'none'; }
+                const data = JSON.parse(localStorage.getItem('surveyAppData')) || {};
+                data['designerNotes'] = notesArea.value;
+                localStorage.setItem('surveyAppData', JSON.stringify(data));
+            };
+            dictateBtn.onclick = () => {
+                if(rec.running) { rec.stop(); dictateBtn.innerHTML = '🎙️ Dictate Notes'; }
+                else { rec.start(); dictateBtn.innerHTML = '🛑 Stop Dictating'; }
+                rec.running = !rec.running;
+            };
+        } else {
+            dictateBtn.style.display = 'none'; 
+        }
+    }
+
+    // --- 4. INTERACTIVE FABRIC VECTOR IMPLEMENTATION ---
+    window.appCanvases = {};
+    document.querySelectorAll('.canvas-group').forEach(group => {
+        const id = group.getAttribute('data-id');
+        const canvasEl = group.querySelector('canvas');
+        if (!canvasEl) return;
+
+        const fCanvas = new fabric.Canvas(canvasEl.id, { 
+            isDrawingMode: false,
+            allowTouchScrolling: true,
+            selection: false
+        });
+        fCanvas.freeDrawingBrush.color = '#FF0000';
+        fCanvas.freeDrawingBrush.width = 4;
+        window.appCanvases[id] = fCanvas;
+
+        let activeTool = 'locked'; 
+        let isDrawingLine = false;
+        let activeLineObj = null;
+        let startX = 0; let startY = 0;
+
+        const lockBtn = group.querySelector('.lock-btn');
+        const freehandBtn = group.querySelector('.freehand-btn');
+        const highlightBtn = group.querySelector('.highlight-btn');
+        const lineBtn = group.querySelector('.line-btn');
+        const dimLineBtn = group.querySelector('.dim-line-btn');
+        const textBtn = group.querySelector('.text-btn');
+        const pin1Btn = group.querySelector('.pin-1-btn');
+        const pin2Btn = group.querySelector('.pin-2-btn');
+        const pin3Btn = group.querySelector('.pin-3-btn');
+        const undoBtn = group.querySelector('.undo-btn');
+        const maximizeBtn = group.querySelector('.maximize-btn');
+        const clearBtn = group.querySelector('.clear-btn');
+        const fileInput = group.querySelector('.camera-input');
+        const canvasContainer = group.querySelector('.canvas-container');
+
+        let isPinching = false;
+        let lastPinchDist = 0;
+        let isPanning = false;
+        let lastPanX = 0; 
+        let lastPanY = 0;
+
+        fCanvas.on('mouse:wheel', function(opt) {
+            let delta = opt.e.deltaY;
+            let zoom = fCanvas.getZoom();
+            zoom *= 0.999 ** delta;
+            if (zoom > 10) zoom = 10;
+            if (zoom < 0.5) zoom = 0.5;
+            fCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            opt.e.preventDefault();
+            opt.e.stopPropagation();
         });
 
-        // Registration
-        document.getElementById('registerBtn')?.addEventListener('click', async () => {
-            const errEl = document.getElementById('authError'); errEl.style.display = 'none';
-            const brand = document.getElementById('regBrand').value, name = document.getElementById('regName').value.trim(), email = document.getElementById('regEmail').value.trim(), pass = document.getElementById('regPassword').value;
-            if(!brand || !name || !email || !pass) return errEl.innerText = "Fill all required fields.", errEl.style.display = 'block';
-            try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "users", cred.user.uid), { brand, name, phone: document.getElementById('regPhone').value, bio: document.getElementById('regBio').value, email, role: 'designer', createdAt: serverTimestamp() });
-            } catch (error) { errEl.innerText = error.message.replace('Firebase: ', ''); errEl.style.display = 'block'; }
+        fCanvas.on('mouse:down', function(opt) {
+            if (activeTool === 'locked' && !isPinching) {
+                isPanning = true;
+                lastPanX = opt.e.clientX || (opt.e.touches && opt.e.touches[0].clientX);
+                lastPanY = opt.e.clientY || (opt.e.touches && opt.e.touches[0].clientY);
+            }
         });
 
-        document.getElementById('loginBtn')?.addEventListener('click', () => signInWithEmailAndPassword(auth, document.getElementById('authEmail').value, document.getElementById('authPassword').value));
-        document.getElementById('logoutBtn')?.addEventListener('click', () => signOut(auth));
+        fCanvas.on('mouse:move', function(opt) {
+            if (isPanning && activeTool === 'locked') {
+                let e = opt.e;
+                let currentX = e.clientX || (e.touches && e.touches[0].clientX);
+                let currentY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (currentX && currentY && lastPanX && lastPanY) {
+                    let vpt = fCanvas.viewportTransform;
+                    vpt[4] += currentX - lastPanX; 
+                    vpt[5] += currentY - lastPanY; 
+                    fCanvas.requestRenderAll();
+                    lastPanX = currentX;
+                    lastPanY = currentY;
+                }
+            }
+        });
 
-        // State Manager
-        const getFormState = () => {
-            const data = {}; document.querySelectorAll('.form-group__input').forEach(el => { if (el.id && el.type !== 'file') data[el.id] = el.value; });
-            const canvases = {}; if (window.appCanvases) { for (let key in window.appCanvases) canvases[key] = window.appCanvases[key].toJSON(); }
-            return { inputs: data, canvases };
-        };
+        fCanvas.on('mouse:up', function() {
+            isPanning = false;
+            fCanvas.setViewportTransform(fCanvas.viewportTransform); 
+        });
 
-        const loadFormState = (payload) => {
-            if (payload.inputs) { for (let key in payload.inputs) { const el = document.getElementById(key); if (el) el.value = payload.inputs[key]; } }
-            if (payload.canvases && window.appCanvases) { for (let key in payload.canvases) if (window.appCanvases[key]) window.appCanvases[key].loadFromJSON(payload.canvases[key], window.appCanvases[key].renderAll.bind(window.appCanvases[key])); }
-            window.showToast("Survey Loaded");
-        };
+        canvasContainer.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                isPanning = false;
+                fCanvas.isDrawingMode = false; 
 
-        // --- CONTINUOUS AUTOSAVE ENGINE (WITH SYNC RESILIENCE) ---
-        let offlineQueue = false;
-        window.performCloudAutoSave = async () => {
-            if (!auth.currentUser) return;
-            const cName = document.getElementById('clientName').value.trim();
-            if (!cName) return; 
+                lastPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        }, { passive: false });
 
-            const sId = cName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + auth.currentUser.uid.slice(-4);
-            const syncStatus = document.getElementById('syncStatus');
+        canvasContainer.addEventListener('touchmove', function(e) {
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault(); 
+
+                let currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                let zoom = fCanvas.getZoom();
+                zoom *= (currentDist / lastPinchDist); 
+
+                if (zoom > 10) zoom = 10;
+                if (zoom < 0.5) zoom = 0.5;
+
+                let rect = canvasContainer.getBoundingClientRect();
+                let pinchCenterX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+                let pinchCenterY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+
+                fCanvas.zoomToPoint({ x: pinchCenterX, y: pinchCenterY }, zoom);
+                lastPinchDist = currentDist;
+            }
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchend', function(e) {
+            if (isPinching && e.touches.length < 2) {
+                isPinching = false;
+                if (activeTool === 'freehand' || activeTool === 'highlight') fCanvas.isDrawingMode = true; 
+            }
+        });
+
+        function setButtonState(tool) {
+            activeTool = tool;
+            const currentZoom = fCanvas.getZoom();
+
+            lockBtn?.classList.toggle('canvas-locked', tool === 'locked');
+            if (lockBtn) lockBtn.textContent = (tool === 'locked') ? '🔒 Locked for Scroll & Pan' : '🔓 Canvas Active';
+
+            freehandBtn?.classList.toggle('active', tool === 'freehand');
+            highlightBtn?.classList.toggle('active', tool === 'highlight');
+            lineBtn?.classList.toggle('active', tool === 'line');
+            dimLineBtn?.classList.toggle('active', tool === 'dim-line');
+            textBtn?.classList.toggle('active', tool === 'text');
+
+            fCanvas.isDrawingMode = (tool === 'freehand' || tool === 'highlight');
             
-            if (!navigator.onLine) {
-                if(syncStatus) { syncStatus.innerText = "Offline - Queued"; syncStatus.style.color = "#ff4444"; }
-                offlineQueue = true;
-                return;
+            if (tool === 'freehand') {
+                fCanvas.freeDrawingBrush.color = '#FF0000';
+                fCanvas.freeDrawingBrush.width = 4 / currentZoom;
+            } else if (tool === 'highlight') {
+                fCanvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.4)';
+                fCanvas.freeDrawingBrush.width = 25 / currentZoom;
             }
 
-            if(syncStatus) { syncStatus.innerText = "Autosaving..."; syncStatus.style.color = "#ffc107"; }
+            fCanvas.selection = (tool === 'text' || tool === 'locked'); 
+            fCanvas.allowTouchScrolling = (tool === 'locked' || tool === 'text');
+
+            fCanvas.getObjects().forEach(obj => {
+                obj.selectable = (tool === 'text');
+                obj.editable = (tool === 'text');
+            });
+
+            fCanvas.discardActiveObject();
             
-            try {
-                await setDoc(doc(db, "surveys", sId), { userId: auth.currentUser.uid, clientName: cName, data: getFormState(), updatedAt: serverTimestamp() });
-                if(syncStatus) { syncStatus.innerText = "Saved"; syncStatus.style.color = "#28a745"; }
-                offlineQueue = false;
-            } catch (error) { console.error(error); if(syncStatus) syncStatus.innerText = "Error Saving"; }
-        };
+            if (tool === 'line') bindLineTool();
+            else if (tool === 'dim-line') bindDimLineTool();
+            else if (tool === 'text') bindTextTool();
 
-        // Offline Network Listeners
-        window.addEventListener('online', () => { 
-            window.showToast("Signal Restored. Syncing...", true); 
-            if(offlineQueue) window.performCloudAutoSave(); 
-        });
-        window.addEventListener('offline', () => { 
-            window.showToast("Dead Zone: Working Offline", false); 
-            const syncStatus = document.getElementById('syncStatus');
-            if(syncStatus) { syncStatus.innerText = "Offline Mode"; syncStatus.style.color = "#ff4444"; }
-        });
-
-        let currentDrafts = {};
-        async function fetchCloudDrafts(uid) {
-            const q = query(collection(db, "surveys"), where("userId", "==", uid));
-            try {
-                const snap = await getDocs(q);
-                const select = document.getElementById('cloudDrafts'); select.innerHTML = '<option value="">Load Previous...</option>';
-                snap.forEach((doc) => { currentDrafts[doc.id] = doc.data(); select.innerHTML += `<option value="${doc.id}">${doc.data().clientName}</option>`; });
-            } catch (e) { console.error(e); }
+            fCanvas.calcOffset();
+            fCanvas.renderAll();
         }
-        document.getElementById('loadCloudBtn')?.addEventListener('click', () => { const id = document.getElementById('cloudDrafts').value; if(id) loadFormState(currentDrafts[id].data); });
 
-        // --- ADMIN HUB LOGIC WITH STATS ---
-        async function fetchAdminLeads() {
-            const container = document.getElementById('adminLeadsContainer');
-            try {
-                const snapshot = await getDocs(collection(db, "surveys"));
-                container.innerHTML = snapshot.empty ? '<p style="color:#888;">No surveys yet.</p>' : '';
-                
-                let totalSurveys = 0;
-                let todaySurveys = 0;
-                let designersSet = new Set();
-                const todayStr = new Date().toLocaleDateString();
+        function bindLineTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'line') return;
+                isDrawingLine = true;
+                const pointer = fCanvas.getPointer(o.e);
+                startX = pointer.x; startY = pointer.y;
+                const z = fCanvas.getZoom();
 
-                snapshot.forEach(doc => {
-                    const data = doc.data(), inputs = data.data.inputs || {}, dDate = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleDateString() : 'N/A';
+                activeLineObj = new fabric.Line([startX, startY, startX, startY], {
+                    strokeWidth: 4 / z, stroke: '#FF0000', originX: 'center', originY: 'center', selectable: false, hasControls: false
+                });
+                fCanvas.add(activeLineObj);
+            });
+
+            fCanvas.on('mouse:move', function(o) {
+                if (!isDrawingLine || activeTool !== 'line') return;
+                const pointer = fCanvas.getPointer(o.e);
+                activeLineObj.set({ x2: pointer.x, y2: pointer.y });
+                fCanvas.renderAll();
+            });
+
+            fCanvas.on('mouse:up', function() {
+                if (activeTool !== 'line') return;
+                isDrawingLine = false;
+                if (activeLineObj) activeLineObj.setCoords();
+                fCanvas.renderAll();
+            });
+        }
+
+        // UPGRADED AUTO-DIM & SNAP TOOL
+        function bindDimLineTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'dim-line') return;
+                isDrawingLine = true;
+                const pointer = fCanvas.getPointer(o.e);
+                startX = pointer.x; startY = pointer.y;
+                const z = fCanvas.getZoom();
+
+                activeLineObj = new fabric.Line([startX, startY, startX, startY], {
+                    strokeWidth: 3 / z, stroke: '#0D6EFD', strokeDashArray: [5 / z, 5 / z], 
+                    originX: 'center', originY: 'center', selectable: false, hasControls: false
+                });
+                fCanvas.add(activeLineObj);
+            });
+
+            fCanvas.on('mouse:move', function(o) {
+                if (!isDrawingLine || activeTool !== 'dim-line') return;
+                const pointer = fCanvas.getPointer(o.e);
+                let x2 = pointer.x; let y2 = pointer.y;
+
+                if (o.e.shiftKey) {
+                    const dx = x2 - startX;
+                    const dy = y2 - startY;
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    const snappedAngle = Math.round(angle / 45) * 45;
+                    const dist = Math.hypot(dx, dy);
+                    x2 = startX + dist * Math.cos(snappedAngle * Math.PI / 180);
+                    y2 = startY + dist * Math.sin(snappedAngle * Math.PI / 180);
+                }
+
+                activeLineObj.set({ x2: x2, y2: y2 });
+                fCanvas.renderAll();
+            });
+
+            fCanvas.on('mouse:up', function() {
+                if (activeTool !== 'dim-line') return;
+                isDrawingLine = false;
+                if (activeLineObj) {
+                    activeLineObj.setCoords();
+                    const x1 = activeLineObj.x1, y1 = activeLineObj.y1, x2 = activeLineObj.x2, y2 = activeLineObj.y2;
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    const z = fCanvas.getZoom();
+                    const arrowSize = 12 / z;
+
+                    const dist = Math.hypot(x2 - x1, y2 - y1);
+                    const mmEstimate = Math.round(dist * 5); 
                     
-                    // Stat Calc
-                    totalSurveys++;
-                    designersSet.add(data.userId);
-                    if (dDate === todayStr) todaySurveys++;
+                    const label = new fabric.Text(`${mmEstimate} mm`, {
+                        left: (x1 + x2) / 2, top: (y1 + y2) / 2,
+                        originX: 'center', originY: 'center',
+                        fontSize: 16 / z, fill: '#fff', backgroundColor: '#0D6EFD',
+                        padding: 4, fontWeight: 'bold', selectable: true
+                    });
 
-                    container.innerHTML += `
-                        <div class="admin-lead-card" style="background:#2a2a2a; padding:15px; border-radius:8px; border-left:4px solid #ff9800; display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <div>
-                                <h3 style="margin:0 0 5px 0; color:#fff;">${data.clientName || 'Unnamed'} <span style="font-size:0.8rem; color:#ff9800;">${inputs.postCode || ''}</span></h3>
-                                <p style="margin:0; color:#aaa; font-size:0.85rem;">Build: ${inputs.buildType || 'TBC'} | Size: ${inputs.proposedSize || 'TBC'}</p>
-                                <p style="margin:5px 0 0 0; color:#888; font-size:0.8rem;">Date Saved: ${dDate}</p>
-                            </div>
-                        </div>`;
-                });
-
-                // Update Stat UI
-                document.getElementById('statTotal').innerText = totalSurveys;
-                document.getElementById('statDesigners').innerText = designersSet.size;
-                document.getElementById('statToday').innerText = todaySurveys;
-
-            } catch (error) { console.error(error); }
+                    const arrow1 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#0D6EFD', left: x1, top: y1, originX: 'center', originY: 'center', angle: angle - 90, selectable: false });
+                    const arrow2 = new fabric.Triangle({ width: arrowSize, height: arrowSize, fill: '#0D6EFD', left: x2, top: y2, originX: 'center', originY: 'center', angle: angle + 90, selectable: false });
+                    
+                    fCanvas.add(arrow1, arrow2, label);
+                }
+                fCanvas.renderAll();
+            });
         }
 
-        document.getElementById('adminSearch')?.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.admin-lead-card').forEach(card => { card.style.display = card.innerText.toLowerCase().includes(term) ? 'flex' : 'none'; });
+        function bindTextTool() {
+            fCanvas.off('mouse:down'); fCanvas.off('mouse:move'); fCanvas.off('mouse:up');
+            fCanvas.on('mouse:down', function(o) {
+                if (activeTool !== 'text') return;
+                const target = fCanvas.findTarget(o.e);
+                if (target && (target.type === 'i-text' || target.type === 'text' || target.type === 'group')) return;
+
+                const pointer = fCanvas.getPointer(o.e);
+                const z = fCanvas.getZoom();
+                const mmText = new fabric.IText('3000 mm', {
+                    left: pointer.x, top: pointer.y, fontFamily: 'system-ui', fontSize: 20 / z,
+                    fill: '#FFFF00', fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.65)',
+                    padding: 6 / z, cornerSize: 8 / z, transparentCorners: false, hasControls: true
+                });
+                fCanvas.add(mmText);
+                fCanvas.setActiveObject(mmText);
+                fCanvas.renderAll();
+            });
+        }
+
+        function addPin(num, color) {
+            const z = fCanvas.getZoom();
+            const vpt = fCanvas.viewportTransform;
+            const centerX = (fCanvas.width / 2 - vpt[4]) / z;
+            const centerY = (fCanvas.height / 2 - vpt[5]) / z;
+
+            const pinGroup = new fabric.Group([
+                new fabric.Circle({radius:18/z, fill:color, stroke:'#fff', strokeWidth:3/z, shadow: new fabric.Shadow({color: 'rgba(0,0,0,0.5)', blur: 5/z, offsetY: 2/z})}),
+                new fabric.Text(num, {fontSize:20/z, fill:'#fff', fontWeight:'bold', originX:'center', originY:'center'})
+            ], {
+                left: centerX, top: centerY, originX: 'center', originY: 'center', hasControls: true, borderColor: '#FF0000', cornerColor: '#FF0000', cornerSize: 8/z, transparentCorners: false
+            });
+
+            fCanvas.add(pinGroup);
+            fCanvas.setActiveObject(pinGroup);
+            setButtonState('text'); 
+        }
+
+        lockBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('locked'); });
+        freehandBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('freehand'); });
+        highlightBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('highlight'); });
+        lineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('line'); });
+        dimLineBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('dim-line'); });
+        textBtn?.addEventListener('click', (e) => { e.preventDefault(); setButtonState('text'); });
+
+        pin1Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('1', '#0D6EFD'); });
+        pin2Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('2', '#0dcaf0'); });
+        pin3Btn?.addEventListener('click', (e) => { e.preventDefault(); addPin('3', '#ffc107'); });
+
+        undoBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const objects = fCanvas.getObjects();
+            if (objects.length > 0) {
+                const lastObj = objects[objects.length - 1];
+                if (lastObj.type === 'triangle' || lastObj.type === 'text') {
+                    fCanvas.remove(objects[objects.length - 1]); 
+                    fCanvas.remove(objects[objects.length - 2]); 
+                    fCanvas.remove(objects[objects.length - 3]); 
+                } else {
+                    fCanvas.remove(lastObj);
+                }
+                fCanvas.renderAll();
+            }
         });
 
-        // --- CSV EXPORT LOGIC ---
-        document.getElementById('adminExportBtn')?.addEventListener('click', async () => {
-            if(window.showToast) window.showToast("Compiling Report...", false);
-            try {
-                const snapshot = await getDocs(collection(db, "surveys"));
-                let csv = "Date Saved,Designer ID,Client Name,Postcode,Build Type,Proposed Size\n";
-                snapshot.forEach(doc => {
-                    const data = doc.data(), inputs = data.data.inputs || {};
-                    const date = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleDateString() : 'N/A';
-                    csv += `"${date}","${data.userId}","${data.clientName || ''}","${inputs.postCode || ''}","${inputs.buildType || ''}","${inputs.proposedSize || ''}"\n`;
-                });
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Survey_Leads_Report.csv`; a.click();
-                if(window.showToast) window.showToast("CSV Downloaded!", true);
-            } catch (err) { console.error(err); if(window.showToast) window.showToast("Export Failed", false); }
+        clearBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            fCanvas.clear();
+            fCanvas.setBackgroundImage(null, fCanvas.renderAll.bind(fCanvas));
+            fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+            if (fileInput) fileInput.value = '';
+            setButtonState('locked');
         });
-    </script>
-    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }</script>
-</body>
-</html>
+
+        maximizeBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isFull = group.classList.toggle('fullscreen-mode');
+            fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+
+            if (isFull) {
+                maximizeBtn.textContent = '📉 Close Screen';
+                fCanvas.setDimensions({ width: window.innerWidth - 40, height: window.innerHeight - 140 });
+            } else {
+                maximizeBtn.textContent = '🔍 Max Screen';
+                const currentBg = fCanvas.backgroundImage;
+                if (currentBg) {
+                    const imgRatio = currentBg.height / currentBg.width;
+                    const maxWidth = group.querySelector('.canvas-container').clientWidth || 600;
+                    const dynamicHeight = maxWidth * imgRatio;
+                    fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight });
+                } else {
+                    fCanvas.setDimensions({ width: 600, height: 400 });
+                }
+            }
+            setTimeout(() => { fCanvas.calcOffset(); fCanvas.renderAll(); }, 100);
+        });
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (!e.target.files || e.target.files.length === 0) return;
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(f) {
+                    const nativeImg = new Image();
+                    nativeImg.onload = function() {
+                        fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+                        const imgRatio = nativeImg.height / nativeImg.width;
+                        const maxWidth = group.querySelector('.canvas-container').clientWidth || 600;
+                        const dynamicHeight = maxWidth * imgRatio;
+
+                        fCanvas.setDimensions({ width: maxWidth, height: dynamicHeight });
+                        const fabricImg = new fabric.Image(nativeImg);
+                        const scale = Math.min(fCanvas.width / fabricImg.width, fCanvas.height / fabricImg.height);
+
+                        fabricImg.set({ 
+                            originX: 'center', originY: 'center', 
+                            scaleX: scale, scaleY: scale, 
+                            left: fCanvas.width / 2, top: fCanvas.height / 2, 
+                            selectable: false
+                        });
+
+                        fCanvas.setBackgroundImage(fabricImg, () => {
+                            fCanvas.calcOffset();
+                            fCanvas.renderAll();
+                        });
+                    };
+                    nativeImg.src = f.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+
+    // --- 5. DATA BINDING & PDF GENERATION ---
+    function getSurveyData() {
+        const dName = document.getElementById('designerSelect')?.value || "Surveyor";
+        const selectedBrand = document.getElementById('brandSelect')?.value || "CO Home Improvements";
+
+        const profiles = window.designerProfiles || {};
+        const logos = window.brandLogos || {};
+        const profile = profiles[dName] || { phone: "", email: "" };
+
+        return {
+            clientName: document.getElementById('clientName')?.value || 'Customer',
+            clientNum: document.getElementById('clientNum')?.value || '',
+            address: document.getElementById('postCode')?.value || '',
+            date: document.getElementById('apptDate')?.value ? new Date(document.getElementById('apptDate').value).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+            revisitDate: document.getElementById('revisitDate')?.value ? new Date(document.getElementById('revisitDate').value).toLocaleDateString('en-GB') : '',
+            revisitLocation: document.getElementById('revisitLocation')?.value || '',
+            buildType: document.getElementById('buildType')?.value || '',
+            roofType: document.getElementById('roofType')?.value || '',
+            proposedSize: document.getElementById('proposedSize')?.value || '',
+            frameColour: document.getElementById('frameColour')?.value || '',
+            newBuildMaterial: document.getElementById('newBuildMaterial')?.value || '',
+            planningPerms: document.getElementById('planningPerms')?.value || '',
+            buildingRegs: document.getElementById('buildingRegs')?.value || '',
+            sapCalcs: document.getElementById('sapCalcs')?.value || '',
+            weepVents: document.getElementById('weepventsExist')?.value || '',
+            designerName: dName, 
+            designerPhone: profile.phone, 
+            designerEmail: profile.email,
+            designerNotes: document.getElementById('designerNotes')?.value || '',
+            logoSource: logos[selectedBrand] || "logo.jpg"
+        };
+    }
+
+    document.getElementById('generateInternalPdfBtn')?.addEventListener('click', async function() {
+        const data = getSurveyData();
+        const template = document.getElementById('pdfTemplateInternal');
+
+        try {
+            template.querySelectorAll('.bind-name').forEach(el => el.innerText = data.clientName);
+            template.querySelectorAll('.bind-num').forEach(el => el.innerText = data.clientNum);
+            template.querySelectorAll('.bind-address').forEach(el => el.innerText = data.address);
+            template.querySelectorAll('.bind-date').forEach(el => el.innerText = data.date);
+
+            const designerEl = document.getElementById('pdfPrintDesigner');
+            if (designerEl) designerEl.innerText = data.designerName;
+
+            ['BuildType', 'RoofType', 'ProposedSize', 'FrameColour', 'HouseMaterial', 'DpcDepth', 'FasciaHeight', 'AirBricks', 'BuildingRegs', 'PlanningPerms', 'SapCalcs', 'Budget', 'AccessDifficult', 'AccessWidth', 'WallObstacles', 'DesignerNotes', 'MiscNotes'].forEach(key => {
+                const inputEl = document.getElementById(key.charAt(0).toLowerCase() + key.slice(1));
+                const textEl = document.getElementById(`pdf${key}`);
+                if (inputEl && textEl) textEl.innerText = inputEl.value;
+            });
+
+            await window.PDFEngine.populatePdfImageGrid('accessPhotos', 'pdfAccessPhotosGrid');
+            await window.PDFEngine.populatePdfImageGrid('miscPhotos', 'pdfMiscPhotosGrid');
+
+            ['frontelevation', 'sideelevation', 'rearelevation', 'housematerialphoto', 'manhole', 'weepvents', 'rwpsvp', 'treelocations', 'designersketch'].forEach(id => {
+                const fCanvas = window.appCanvases[id];
+                const imgTag = document.getElementById(`pdfImgInternal-${id}`);
+                if (fCanvas && imgTag) { 
+                    fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+                    fCanvas.discardActiveObject(); 
+                    fCanvas.renderAll(); 
+                    imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.9 }); 
+                }
+            });
+        } catch (e) { console.warn("Binding bypass:", e); }
+
+        const surname = data.clientName.trim().split(' ').pop() || 'Customer';
+        await window.PDFEngine.executeSecurePDFGeneration('pdfTemplateInternal', `${surname}_Internal_Survey.pdf`, this, data);
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'generate_pdf', { 'pdf_type': 'Internal Survey', 'designer': data.designerName });
+        }
+    });
+
+    document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', async function() {
+        const data = getSurveyData();
+        const template = document.getElementById('pdfTemplateCustomer');
+
+        try {
+            const firstName = data.clientName.split(' ')[0] || 'Customer';
+            const greetingEl = document.getElementById('lp-greeting');
+            if (greetingEl) {
+                greetingEl.innerHTML = `Hi ${firstName},<br><br>I want to say a massive thank you for inviting me into your home today. I've put together this summary document outlining the major talking points from our appointment so we both know we are on exactly the right lines. If there is anything you'd like to adjust, please don't hesitate to get in touch.`;
+            }
+
+            const sizeEl = document.getElementById('lp-size');
+            if (sizeEl) {
+                if (data.buildType && data.proposedSize) {
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType} measuring approximately ${data.proposedSize}mm. We have plenty of flexibility to adjust this as we develop the final design.`;
+                } else if (data.buildType) {
+                    sizeEl.innerText = `As discussed, we are proposing a beautiful new ${data.buildType}. We didn't quite pinpoint the exact dimensions just yet, which is absolutely fine. We have plenty of flexibility to work towards the perfect size as we develop the design.`;
+                } else {
+                    sizeEl.innerText = `We didn't quite pinpoint the exact dimensions of your build just yet, which is absolutely fine. We have plenty of flexibility to work towards the perfect size as we develop the design.`;
+                }
+            }
+
+            const roofEl = document.getElementById('lp-roof');
+            if (roofEl) {
+                if (data.roofType) {
+                    roofEl.innerText = `To perfectly complement the build, we discussed incorporating a premium ${data.roofType} system. I will prepare a few different 3D options featuring this so you can see exactly how it looks.`;
+                } else {
+                    roofEl.innerText = `We have yet to decide on the final roof style, but I will prepare a few different options for you to review so we can find the perfect match for your home.`;
+                }
+            }
+
+            const frameEl = document.getElementById('lp-frame');
+            if (frameEl) {
+                if (data.frameColour) {
+                    frameEl.innerText = `We agreed that the window and door frames will look fantastic finished in an elegant ${data.frameColour} colourway to match your property.`;
+                } else {
+                    frameEl.innerText = `We haven't narrowed down the final frame colour or build materials just yet, but we have an incredible range to choose from. Just let me know when you are ready to explore them.`;
+                }
+            }
+
+            const complianceEl = document.getElementById('lp-compliance');
+            if (complianceEl) {
+                const needsPlanning = (data.planningPerms === 'Full Planning' || data.planningPerms === 'Pre Approved Planning');
+                const needsRegs = (data.buildingRegs === 'Yes');
+                const needsSap = (data.sapCalcs === 'Yes');
+
+                if (!needsPlanning && !needsRegs && !needsSap) {
+                    complianceEl.innerText = `Based on your choices, it looks like we do not need Planning Permission, we do not need Building Regulations, and we do not need SAP calculations. Please don't worry about the technicalities of these—I have included a brief explanation of what they mean later in this pack, and our team will handle all of it for you.`;
+                } else {
+                    let reqs = [];
+                    if (needsPlanning) reqs.push(data.planningPerms);
+                    if (needsRegs) reqs.push("Building Regulations");
+                    if (needsSap) reqs.push("SAP Calculations");
+
+                    const reqString = reqs.join(', ').replace(/, ([^,]*)$/, ' and $1');
+                    complianceEl.innerText = `Regarding compliance, based on our discussion your project will require ${reqString}. Please don't worry about the technicalities of these—I have included a brief explanation of what they mean later in this pack, and our dedicated team will handle all of it for you.`;
+                }
+            }
+
+            const revisitEl = document.getElementById('lp-revisit');
+            if (revisitEl) {
+                if (data.revisitDate) {
+                    revisitEl.innerText = `I look forward to our next catch-up scheduled for ${data.revisitDate}${data.revisitLocation ? ` at ${data.revisitLocation}` : ''}. We will go through your custom 3D designs together then. If you need anything before I next get in touch, please contact me on the details below.`;
+                } else {
+                    revisitEl.innerText = `We haven't booked in a date for our next catch-up just yet, but as soon as we work out a time, we will get you scheduled in. If you need anything before I next get in touch, please contact me on the details below.`;
+                }
+            }
+
+            const nameEl = document.getElementById('lp-designer-name'); if(nameEl) nameEl.innerText = data.designerName;
+            const contactEl = document.getElementById('lp-designer-contact'); if(contactEl) contactEl.innerText = `${data.designerPhone} | ${data.designerEmail}`;
+
+        } catch (e) { console.warn("Binding bypass:", e); }
+
+        const surname = data.clientName.trim().split(' ').pop() || 'Customer';
+        await window.PDFEngine.executeSecurePDFGeneration('pdfTemplateCustomer', `${surname}_Design_Consultation.pdf`, this, data);
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'generate_pdf', { 'pdf_type': 'Customer Pack', 'designer': data.designerName });
+        }
+    });
+
+    document.getElementById('generateHybridPdfBtn')?.addEventListener('click', async function() {
+        const data = getSurveyData();
+        const template = document.getElementById('pdfTemplateHybrid');
+        
+        document.getElementById('hybPdfName').innerText = data.clientName;
+        document.getElementById('hybPdfDate').innerText = data.date;
+        document.getElementById('hyb-size').innerText = `Proposed Specs: ${data.buildType} - ${data.proposedSize}`;
+        document.getElementById('hyb-roof').innerText = `Roof Configuration: ${data.roofType}`;
+        document.getElementById('hyb-frame').innerText = `Frame Specification: ${data.frameColour}`;
+        document.getElementById('hyb-custom-notes').innerText = document.getElementById('customerNotes')?.value || data.designerNotes;
+
+        const sketchCanvas = window.appCanvases['designersketch'];
+        if(sketchCanvas) {
+            sketchCanvas.setViewportTransform([1,0,0,1,0,0]); 
+            sketchCanvas.renderAll();
+            const img = document.createElement('img');
+            img.src = sketchCanvas.toDataURL('image/jpeg', 0.9);
+            img.style.width = '100%'; img.style.marginTop = '20px';
+            document.getElementById('pdfHybridImagesGrid').innerHTML = '';
+            document.getElementById('pdfHybridImagesGrid').appendChild(img);
+            document.getElementById('hybridPdfImagePage').style.display = 'block';
+        }
+
+        const surname = data.clientName.trim().split(' ').pop() || 'Customer';
+        await window.PDFEngine.executeSecurePDFGeneration('pdfTemplateHybrid', `${surname}_Design_Hybrid.pdf`, this, data);
+    });
+
+});
