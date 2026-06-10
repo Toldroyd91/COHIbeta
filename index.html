@@ -320,6 +320,7 @@
             
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <input type="text" id="adminSearch" class="form-group__input" placeholder="Search leads by Client Name or Postcode..." style="flex-grow: 1;">
+                <button id="adminExportBtn" class="button" style="background: #ff9800; white-space: nowrap;">Export CSV</button>
             </div>
 
             <div id="adminLeadsContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
@@ -572,6 +573,24 @@
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.admin-lead-card').forEach(card => { card.style.display = card.innerText.toLowerCase().includes(term) ? 'flex' : 'none'; });
         });
+
+        // --- CSV EXPORT LOGIC ---
+        document.getElementById('adminExportBtn')?.addEventListener('click', async () => {
+            if(window.showToast) window.showToast("Compiling Report...", false);
+            try {
+                const snapshot = await getDocs(collection(db, "surveys"));
+                let csv = "Date Saved,Designer ID,Client Name,Postcode,Build Type,Proposed Size\n";
+                snapshot.forEach(doc => {
+                    const data = doc.data(), inputs = data.data.inputs || {};
+                    const date = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleDateString() : 'N/A';
+                    csv += `"${date}","${data.userId}","${data.clientName || ''}","${inputs.postCode || ''}","${inputs.buildType || ''}","${inputs.proposedSize || ''}"\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Survey_Leads_Report.csv`; a.click();
+                if(window.showToast) window.showToast("CSV Downloaded!", true);
+            } catch (err) { console.error(err); if(window.showToast) window.showToast("Export Failed", false); }
+        });
     </script>
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }</script>
 </body>
 </html>
