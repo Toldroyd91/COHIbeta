@@ -21,7 +21,7 @@ window.showToast = function(msg, isSuccess = true) {
 setTimeout(() => { const splash = document.getElementById('splashScreen'); if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.style.display = 'none', 600); } }, 1200);
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V2 Modular Hybrid).");
+    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V2 Final).");
     let jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
 
     // --- 1. CONTINUOUS AUTOSAVE ---
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fCanvas = new fabric.Canvas(canvasEl.id, { isDrawingMode: false, allowTouchScrolling: true, selection: false });
         window.appCanvases[id] = fCanvas;
         fCanvas.isCalibrating = false; 
-        fCanvas.scaleRatio = 5; // Default: 1px = 5mm (Will be updated by measure tool)
+        fCanvas.scaleRatio = 5; 
 
         if(savedData['canvas_' + id]) fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
 
@@ -104,7 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
             triggerAutoSave();
         };
 
-        // --- NEW LINE & AUTO-DIM TOOLS ---
         let activeTool = 'locked';
         let isDrawingLine = false;
         let activeLineObj = null;
@@ -132,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const pointer = fCanvas.getPointer(o.e);
                 let x2 = pointer.x; let y2 = pointer.y;
 
-                // DIMENSIONAL INTELLIGENCE: SHIFT-SNAP (45° Increments)
                 if (o.e.shiftKey) {
                     const dx = x2 - startX;
                     const dy = y2 - startY;
@@ -153,13 +151,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (activeLineObj) {
                     activeLineObj.setCoords();
-                    
                     if (activeTool === 'dim-line') {
                         const x1 = activeLineObj.x1, y1 = activeLineObj.y1, x2 = activeLineObj.x2, y2 = activeLineObj.y2;
                         const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
                         const dist = Math.hypot(x2 - x1, y2 - y1);
-                        
-                        // Apply Scale Calibration
                         const mmEstimate = Math.round(dist * (fCanvas.scaleRatio || 5)); 
                         
                         const label = new fabric.Text(`${mmEstimate} mm`, {
@@ -201,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         });
 
-        // Setup Calibration & Tool Buttons
         const toolSection = group.querySelector('.tool-section');
         if(toolSection && !group.querySelector('.measure-btn')) {
             const measureBtn = document.createElement('button');
@@ -222,12 +216,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     fCanvas.scaleRatio = knownSize / e.path.width;
                     window.showToast(`Calibrated! Lines will auto-label.`);
                     fCanvas.isDrawingMode = false; fCanvas.isCalibrating = false;
-                    fCanvas.remove(e.path); // Remove the ugly calibration scribble
+                    fCanvas.remove(e.path); 
                     measureBtn.classList.remove('active'); group.querySelector('.lock-btn')?.classList.add('active');
                 });
             });
             
-            // Add Line & Dim Line buttons dynamically if missing
             if(!group.querySelector('.line-btn')) {
                 const lineBtn = document.createElement('button'); lineBtn.type='button'; lineBtn.className='tool-btn line-btn'; lineBtn.innerHTML='|'; toolSection.appendChild(lineBtn);
                 lineBtn.addEventListener('click', function() { resetBtns(); this.classList.add('active'); activeTool = 'line'; fCanvas.isDrawingMode = false; bindDimLineTool(); });
@@ -276,6 +269,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- 5. SECURE WATERMARK & PDF ENGINE ---
+    
+    // Auto-search for the correct logo based on the brand name
+    const getBase64Logo = (brandName) => new Promise(resolve => {
+        const fileNames = [`${brandName}.png`, `${brandName}.jpg`, `${brandName.replace(/ /g, '')}.png`, `logo.png`];
+        const tryLoad = (index) => {
+            if(index >= fileNames.length) return resolve(null);
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // Fix for potential canvas tainting
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = () => tryLoad(index + 1);
+            img.src = fileNames[index];
+        };
+        tryLoad(0);
+    });
+
     async function generateMultiPagePDF(templateId, filename) {
         if (!jsPDF) return window.showToast("PDF Engine loading...", false);
         
@@ -301,16 +314,32 @@ document.addEventListener('DOMContentLoaded', function() {
         template.style.display = 'block'; template.style.position = 'absolute'; template.style.width = '800px'; template.style.zIndex = '-9999';
         
         try {
+            // Fetch the image logo
+            const logoBase64 = await getBase64Logo(profile.brand);
+
             const canvas = await html2canvas(template, { scale: 2, windowWidth: 800, windowHeight: template.scrollHeight });
             const pdf = new jsPDF('p', 'mm', 'a4');
             const imgHeight = (canvas.height * pdf.internal.pageSize.getWidth()) / canvas.width;
             
             let heightLeft = imgHeight; let position = 0; const pdfHeight = pdf.internal.pageSize.getHeight();
             
-            // Render first page with Watermark Shield
+            // Image stamping function
+            const stampLogo = () => {
+                if(logoBase64) {
+                    try {
+                        pdf.setGState(new pdf.GState({opacity: 0.08})); // Nice transparent faint watermark
+                        const size = 150; // Size of watermark
+                        const x = (pdf.internal.pageSize.getWidth() - size) / 2;
+                        const y = (pdfHeight - size) / 2;
+                        pdf.addImage(logoBase64, 'PNG', x, y, size, size);
+                        pdf.setGState(new pdf.GState({opacity: 1.0}));
+                    } catch(e) { console.warn("Watermark error", e); }
+                }
+            };
+
+            // Render first page
             pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight);
-            pdf.setTextColor(200, 200, 200); pdf.setFontSize(40);
-            pdf.text(profile.brand.toUpperCase(), pdf.internal.pageSize.getWidth() / 2, pdfHeight / 2, { angle: 45, align: 'center', opacity: 0.1 });
+            stampLogo();
             heightLeft -= pdfHeight;
             
             // Loop for subsequent pages
@@ -318,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 position = position - pdfHeight; 
                 pdf.addPage(); 
                 pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight); 
-                pdf.text(profile.brand.toUpperCase(), pdf.internal.pageSize.getWidth() / 2, pdfHeight / 2, { angle: 45, align: 'center', opacity: 0.1 });
+                stampLogo();
                 heightLeft -= pdfHeight; 
             }
             
@@ -328,33 +357,27 @@ document.addEventListener('DOMContentLoaded', function() {
         finally { template.style.display = 'none'; }
     }
 
-    // PDF POPULATION
-    const populateCustomerData = (prefix) => {
-        const rawName = document.getElementById('clientName')?.value.trim() || 'Valued Customer';
-        document.getElementById(`${prefix}-greeting`).innerText = `Dear ${rawName}, thank you for your time today to discuss your exciting new project.`;
-        document.getElementById(`${prefix}-size`).innerText = `Based on our measurements, we are looking at a proposed size of approximately ${document.getElementById('proposedSize')?.value || "TBC"}.`;
-        document.getElementById(`${prefix}-roof`).innerText = `We discussed utilizing the ${document.getElementById('roofType')?.value || "TBC"} system to ensure the space is perfect year-round.`;
-        document.getElementById(`${prefix}-frame`).innerText = `For the aesthetics, we have noted your preference for ${document.getElementById('frameColour')?.value || "TBC"} frames.`;
-        
-        const custNotes = document.getElementById('customerNotes')?.value;
-        const noteBox = document.getElementById(`${prefix}-custom-notes-box`);
-        if(custNotes && noteBox) {
-            document.getElementById(`${prefix}-custom-notes`).innerText = custNotes;
-            noteBox.style.display = 'block';
-        } else if (noteBox) {
-            noteBox.style.display = 'none';
-        }
-    };
-
+    // --- BUTTON 1: CUSTOMER FACTS SHEET ---
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', () => {
-        const surname = (document.getElementById('clientName')?.value.trim() || 'Customer').split(' ').pop();
-        const profile = window.currentUserProfile || { name: 'Designer', phone: '07700 900000', email: '', brand: 'COHI' };
+        const rawName = document.getElementById('clientName')?.value.trim() || 'Valued Customer';
+        const surname = rawName.split(' ').pop();
+        const profile = window.currentUserProfile || { name: 'Designer', phone: '', email: '' };
         
-        populateCustomerData('lp');
+        document.getElementById('lp-greeting').innerText = `Dear ${rawName}, thank you for your time today to discuss your exciting new project.`;
+        document.getElementById('lp-size').innerText = `Based on our measurements, we are looking at a proposed size of approximately ${document.getElementById('proposedSize')?.value || "TBC"}.`;
+        document.getElementById('lp-roof').innerText = `We discussed utilizing the ${document.getElementById('roofType')?.value || "TBC"} system to ensure the space is perfect year-round.`;
+        document.getElementById('lp-frame').innerText = `For the aesthetics, we have noted your preference for ${document.getElementById('frameColour')?.value || "TBC"} frames.`;
         
         const bRegs = document.getElementById('buildingRegs')?.value; const pPerms = document.getElementById('planningPerms')?.value;
         document.getElementById('lp-compliance').innerText = (bRegs === "Yes" || (pPerms !== "No" && pPerms !== "")) ? `Your project will require compliance oversight (Building Regs: ${bRegs}, Planning: ${pPerms}). Our team handles all of this for you.` : "Your project currently looks to be exempt from additional planning compliance, streamlining our timeline.";
         
+        const custNotes = document.getElementById('customerNotes')?.value;
+        const noteBox = document.getElementById('lp-custom-notes-box');
+        if(custNotes && noteBox) {
+            document.getElementById('lp-custom-notes').innerText = custNotes;
+            noteBox.style.display = 'block';
+        } else if (noteBox) { noteBox.style.display = 'none'; }
+
         const rDate = document.getElementById('revisitDate')?.value;
         document.getElementById('lp-revisit').innerText = rDate ? `I look forward to our next catch-up scheduled for ${rDate}. We will go through your custom 3D designs together then.` : `We haven't booked in a date for our next catch-up just yet, but as soon as we work out a time, we will get you scheduled in.`;
 
@@ -363,37 +386,104 @@ document.addEventListener('DOMContentLoaded', function() {
         generateMultiPagePDF('pdfTemplateCustomer', `${surname}_Facts_Sheet.pdf`);
     });
 
+    // --- BUTTON 2: FULL CUSTOMER PROPOSAL (HYBRID) ---
     document.getElementById('generateHybridPdfBtn')?.addEventListener('click', () => {
-        const surname = (document.getElementById('clientName')?.value.trim() || 'Customer').split(' ').pop();
-        const profile = window.currentUserProfile || { name: 'Designer', brand: 'COHI' };
+        const rawName = document.getElementById('clientName')?.value.trim() || 'Customer';
+        const surname = rawName.split(' ').pop();
         
-        document.getElementById('hybPdfName').innerText = document.getElementById('clientName')?.value || 'TBC';
-        document.getElementById('hybPdfDate').innerText = document.getElementById('apptDate')?.value || new Date().toLocaleDateString();
+        // 1. Intro Details
+        document.getElementById('full-greeting').innerText = `Dear ${rawName}, thank you for your time today. Below is a curated summary of our discussions and the technical specifications required to bring your vision to life.`;
+        document.getElementById('full-size').innerText = `Proposed Specs: ${document.getElementById('buildType')?.value || 'TBC'} - ${document.getElementById('proposedSize')?.value || 'TBC'}`;
+        document.getElementById('full-roof').innerText = `Roof Configuration: ${document.getElementById('roofType')?.value || 'TBC'}`;
+        document.getElementById('full-frame').innerText = `Frame Specification: ${document.getElementById('frameColour')?.value || 'TBC'}`;
         
-        populateCustomerData('hyb');
+        const bRegs = document.getElementById('buildingRegs')?.value; const pPerms = document.getElementById('planningPerms')?.value;
+        document.getElementById('full-compliance').innerText = (bRegs === "Yes" || (pPerms !== "No" && pPerms !== "")) ? `Your project will require compliance oversight (Building Regs: ${bRegs}, Planning: ${pPerms}). Our team handles all of this for you.` : "Your project currently looks to be exempt from additional planning compliance.";
+        
+        const rDate = document.getElementById('revisitDate')?.value;
+        document.getElementById('full-revisit').innerText = rDate ? `I look forward to our next catch-up on ${rDate}.` : `I will be in touch shortly to schedule our next catch-up.`;
 
-        const allCustImages = [...(window.uploadedImagesStore.misc || []), ...(window.uploadedImagesStore.survey || [])];
-        const imagePage = document.getElementById('hybridPdfImagePage');
-        const imageGrid = document.getElementById('pdfHybridImagesGrid');
-        if (allCustImages.length > 0 && imagePage && imageGrid) {
-            imagePage.style.display = 'block';
-            imageGrid.innerHTML = allCustImages.map(imgSrc => `<div style="display: inline-block; width: 46%; margin: 1%; box-sizing: border-box;"><img src="${imgSrc}" style="width: 100%; height: 250px; object-fit: contain; border: 1px solid #ccc; border-radius: 4px; padding: 10px; background: #fff;"></div>`).join('');
-        } else if (imagePage) { imagePage.style.display = 'none'; }
+        // 2. Technical Data
+        ['BuildType', 'ProposedSize', 'RoofType', 'FrameColour', 'HouseMaterial', 'DpcDepth', 'FasciaHeight', 'AirBricks', 'WallObstacles'].forEach(k => {
+            const el = document.getElementById('full' + k);
+            const val = document.getElementById(k.charAt(0).toLowerCase() + k.slice(1))?.value;
+            if(el) el.innerText = val || 'N/A';
+        });
 
-        generateMultiPagePDF('pdfTemplateHybrid', `${surname}_Design_Survey.pdf`);
+        // 3. Toggles Logic
+        const includeNotes = document.getElementById('includeNotesInPack')?.checked;
+        const notesSection = document.getElementById('full-notes-section');
+        if(includeNotes) {
+            notesSection.style.display = 'block';
+            document.getElementById('fullDesignerNotes').innerText = document.getElementById('customerNotes')?.value || document.getElementById('designerNotes')?.value || 'None provided.';
+        } else {
+            notesSection.style.display = 'none';
+        }
+
+        const includeSketch = document.getElementById('includeSketchInPack')?.checked;
+        const sketchSection = document.getElementById('full-sketch-section');
+        const sketchCanvas = window.appCanvases['designersketch'];
+        if(includeSketch && sketchCanvas) {
+            sketchSection.style.display = 'block';
+            sketchCanvas.setViewportTransform([1,0,0,1,0,0]); 
+            sketchCanvas.discardActiveObject(); 
+            sketchCanvas.renderAll(); 
+            document.getElementById('pdfImgFull-designersketch').src = sketchCanvas.toDataURL({ format: 'jpeg', quality: 0.9 });
+        } else {
+            sketchSection.style.display = 'none';
+        }
+
+        generateMultiPagePDF('pdfTemplateFull', `${surname}_Full_Proposal.pdf`);
     });
 
+    // --- BUTTON 3: INTERNAL TECHNICAL PDF ---
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', () => {
         const rawName = document.getElementById('clientName')?.value.trim() || 'Valued Customer';
         const surname = rawName.split(' ').pop() || 'Customer';
         const profile = window.currentUserProfile || { name: 'N/A' };
 
-        document.getElementById('intPdfName').innerText = rawName;
-        document.getElementById('intPdfDate').innerText = document.getElementById('apptDate')?.value || "N/A";
-        document.getElementById('intPdfDesigner').innerText = profile.name;
-        document.getElementById('intPdfBuild').innerText = document.getElementById('buildType')?.value || "N/A";
-        document.getElementById('intPdfRoof').innerText = document.getElementById('roofType')?.value || "N/A";
-        document.getElementById('intPdfNotes').innerText = document.getElementById('designerNotes')?.value || "None";
+        // 1. Text Binds
+        document.querySelectorAll('.bind-name').forEach(el => el.innerText = rawName);
+        document.querySelectorAll('.bind-num').forEach(el => el.innerText = document.getElementById('clientNum')?.value || 'N/A');
+        document.querySelectorAll('.bind-address').forEach(el => el.innerText = document.getElementById('postCode')?.value || 'N/A');
+        document.querySelectorAll('.bind-date').forEach(el => el.innerText = document.getElementById('apptDate')?.value ? new Date(document.getElementById('apptDate').value).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'));
+        
+        const designerEl = document.getElementById('pdfPrintDesigner');
+        if (designerEl) designerEl.innerText = profile.name;
+
+        // 2. Data Fields
+        ['BuildType', 'RoofType', 'ProposedSize', 'FrameColour', 'HouseMaterial', 'DpcDepth', 'FasciaHeight', 'AirBricks', 'BuildingRegs', 'PlanningPerms', 'SapCalcs', 'AccessDifficult', 'AccessWidth', 'WallObstacles'].forEach(key => {
+            const inputEl = document.getElementById(key.charAt(0).toLowerCase() + key.slice(1));
+            const textEl = document.getElementById(`pdf${key}`);
+            if (inputEl && textEl) textEl.innerText = inputEl.value || 'N/A';
+        });
+        
+        const notesEl = document.getElementById('pdfDesignerNotes');
+        if(notesEl) notesEl.innerText = document.getElementById('designerNotes')?.value || 'None';
+
+        // 3. Populate Uploaded Photos Grids
+        const populateGrid = (storeKey, gridId) => {
+            const grid = document.getElementById(gridId);
+            if(grid) {
+                grid.innerHTML = (window.uploadedImagesStore[storeKey] || []).map(imgSrc => 
+                    `<img src="${imgSrc}" style="width: 100%; height: 200px; object-fit: contain; border: 1px solid #ccc; background: #fff;">`
+                ).join('');
+            }
+        };
+        populateGrid('access', 'pdfAccessPhotosGrid');
+        populateGrid('misc', 'pdfMiscPhotosGrid');
+
+        // 4. Render Canvases
+        ['frontelevation', 'sideelevation', 'rearelevation', 'designersketch'].forEach(id => {
+            const fCanvas = window.appCanvases[id];
+            const imgTag = document.getElementById(`pdfImgInternal-${id}`);
+            if (fCanvas && imgTag) { 
+                fCanvas.setViewportTransform([1,0,0,1,0,0]); 
+                fCanvas.discardActiveObject(); 
+                fCanvas.renderAll(); 
+                imgTag.src = fCanvas.toDataURL({ format: 'jpeg', quality: 0.9 }); 
+            }
+        });
 
         generateMultiPagePDF('pdfTemplateInternal', `${surname}_Technical_Survey.pdf`);
     });
