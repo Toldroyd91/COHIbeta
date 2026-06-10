@@ -10,7 +10,7 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX'); // Replace with your actual GA4 Measurement ID
+      gtag('config', 'G-XXXXXXXXXX'); 
     </script>
     
     <link rel="manifest" href="manifest.json">
@@ -66,6 +66,7 @@
             </div>
             
             <p id="authError" style="color: #ff4444; margin-top: 15px; font-size: 0.85rem; display: none;"></p>
+            <p id="appVersionDisplay" style="color: #666; font-size: 0.75rem; margin-top: 20px; border-top: 1px solid #333; padding-top: 10px;">Loading Build Version...</p>
         </div>
     </div>
 
@@ -73,8 +74,7 @@
         <div class="navbar__container header-container" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <h1 class="navbar__title">Survey Pro</h1>
-                <span id="activeDesignerProfile" style="color: var(--accent); font-size: 0.9rem; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; display: none;">
-                    </span>
+                <span id="activeDesignerProfile" style="color: var(--accent); font-size: 0.9rem; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; display: none;"></span>
             </div>
             <div class="nav-controls">
                 <button id="logoutBtn" class="nav-btn btn-icon tool-btn" style="background: var(--input-bg); border: 1px solid #444; color: #ff4444;" title="Log Out">
@@ -223,7 +223,7 @@
             <h2 class="card__title">Design Ideas</h2>
             <div class="form-grid">
                 <div class="form-group"><label class="form-group__label">Build Type *</label><select id="buildType" class="form-group__input" required><option value="">Select...</option><option value="Conservatory">Conservatory</option><option value="Extension">Extension</option><option value="Porch">Porch</option><option value="Roof and Frame">Roof and Frame</option><option value="Other">Other</option></select></div>
-                <div class="form-group"><label class="form-group__label">Roof Type:</label>
+                <div class="form-group"><label class="form-group__label">Edwardian Roof Type:</label>
                     <select id="roofType" class="form-group__input">
                         <option value="">Select...</option>
                         <option value="Ultra380">Ultra380</option>
@@ -243,9 +243,17 @@
                 </div>
                 <div class="form-group"><label class="form-group__label">Building Regs Required?</label><select id="buildingRegs" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
                 <div class="form-group"><label class="form-group__label">Planning Permission Required?</label><select id="planningPerms" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="Full Planning">Full Planning</option></select></div>
+                
                 <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-group__label">Designer Notes:</label>
-                    <textarea id="designerNotes" class="form-group__input" rows="4" placeholder="Type notes here..."></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px;">
+                        <label class="form-group__label" style="margin: 0;">Designer Notes (Raw):</label>
+                        <button id="aiRewriteBtn" type="button" class="button button--secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #2c2c2c; border-color: #555;">✨ AI Polish</button>
+                    </div>
+                    <textarea id="designerNotes" class="form-group__input" rows="4" placeholder="Type raw internal notes here..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
+                    <label class="form-group__label" style="color: #0dcaf0;">Customer Facing Notes (AI Generated):</label>
+                    <textarea id="customerNotes" class="form-group__input" rows="3" placeholder="Polished text for the customer PDF will appear here..."></textarea>
                 </div>
             </div>
 
@@ -272,7 +280,6 @@
 
         <article class="card">
             <h2 class="card__title">Misc</h2>
-            <div class="form-group"><label class="form-group__label">Additional Notes:</label><textarea id="miscNotes" class="form-group__input" rows="3"></textarea></div>
             <div class="form-group" style="margin-top:15px;">
                 <label class="form-group__label">Additional Photos (Upload multiple):</label>
                 <div class="custom-file-upload mt-10">
@@ -282,9 +289,10 @@
             </div>
         </article>
 
-        <div style="display: flex; gap: 15px; margin-top: 34px;">
-            <button id="generateCustomerPdfBtn" class="button button--secondary" style="width: 50%;">Customer Checklist PDF</button>
-            <button id="generateInternalPdfBtn" class="button" style="width: 50%;">Full Survey PDF</button>
+        <div style="display: flex; gap: 15px; margin-top: 34px; flex-wrap: wrap;">
+            <button id="generateCustomerPdfBtn" class="button button--secondary" style="width: 48%;">Facts Sheet PDF</button>
+            <button id="generateHybridPdfBtn" class="button" style="width: 48%; background: #0dcaf0; color: #000; border-color: #0dcaf0;">Customer Design Survey</button>
+            <button id="generateInternalPdfBtn" class="button" style="width: 100%; margin-top: 10px;">Full Technical Survey PDF</button>
         </div>
         <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
     </main>
@@ -294,6 +302,21 @@
             <h2 class="card__title" style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
                 <span style="color: #ff9800;">📊 Manager Intelligence Hub</span>
             </h2>
+
+            <div id="adminStats" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #ff9800;">
+                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Total Surveys</h4>
+                    <p id="statTotal" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
+                </div>
+                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #0dcaf0;">
+                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Active Designers</h4>
+                    <p id="statDesigners" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
+                </div>
+                <div style="flex: 1; background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center; border-top: 3px solid #28a745;">
+                    <h4 style="margin: 0; color: #888; font-size: 0.8rem; text-transform: uppercase;">Today's Leads</h4>
+                    <p id="statToday" style="margin: 5px 0 0 0; font-size: 1.5rem; color: #fff; font-weight: bold;">0</p>
+                </div>
+            </div>
             
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <input type="text" id="adminSearch" class="form-group__input" placeholder="Search leads by Client Name or Postcode..." style="flex-grow: 1;">
@@ -308,22 +331,52 @@
     <div id="pdfTemplateCustomer" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
         <div class="pdf-page" style="text-align: left; padding: 30px 50px; font-size: 15px; line-height: 1.8; color: #333; min-height: 1000px;">
             <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="color: #0F3759; margin-bottom: 0; font-size: 26px; letter-spacing: 1px; border-bottom: 2px solid #0F3759; padding-bottom: 10px;">PREDESIGN SURVEY REPORT</h1>
+                <h1 style="color: #0F3759; margin-bottom: 0; font-size: 26px; letter-spacing: 1px; border-bottom: 2px solid #0F3759; padding-bottom: 10px;">PROJECT FACTS SHEET</h1>
             </div>
             <p id="lp-greeting" style="margin-bottom: 25px;"></p>
             <p id="lp-size" style="margin-bottom: 25px;"></p>
             <p id="lp-roof" style="margin-bottom: 25px;"></p>
             <p id="lp-frame" style="margin-bottom: 25px;"></p>
             <p id="lp-compliance" style="margin-bottom: 25px;"></p>
+            <div id="lp-custom-notes-box" style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-left: 4px solid #0F3759; display: none;">
+                <h4 style="margin: 0 0 10px 0; color: #0F3759;">Design Notes:</h4>
+                <p id="lp-custom-notes" style="margin: 0;"></p>
+            </div>
             <p id="lp-revisit" style="margin-bottom: 40px;"></p>
             <p style="margin-bottom: 20px;">Best regards,</p>
             <p style="margin-bottom: 5px; font-weight: bold; font-size: 18px; color: #0F3759;" id="lp-designer-name"></p>
             <p style="margin-bottom: 15px; font-size: 15px; color: #666;">Design Consultant</p>
             <p style="margin-top: 5px; font-size: 14px;" id="lp-designer-contact"></p>
         </div>
-        <div class="pdf-page" id="customerPdfImagePage" style="text-align: left; padding: 30px 50px; font-size: 15px; display: none; min-height: 1000px;">
-            <h2 style="color: #0F3759; font-size: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Additional Site Imagery</h2>
-            <div id="pdfCustomerImagesGrid" style="margin-top: 20px; width: 100%;"></div>
+    </div>
+
+    <div id="pdfTemplateHybrid" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
+        <div class="pdf-page" style="text-align: center; padding-top: 20px; min-height: 1000px;">
+            <div>
+                <h1 style="color: #0F3759; font-size: 30px; margin: 0 0 10px 0; font-weight: 700; text-transform: uppercase;">Customer Design Survey</h1>
+                <div style="width: 80px; height: 4px; background: #0F3759; margin: 0 auto 30px auto; border-radius: 2px;"></div>
+            </div>
+            <div style="background: #f8f9fa; border-left: 5px solid #0F3759; padding: 25px; text-align: left; border-radius: 4px; margin-top: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #0F3759; font-size: 18px; text-transform: uppercase;">Project Details</h3>
+                <div style="width: 100%; font-size: 14px; color: #495057;">
+                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Customer Name:</strong> <span id="hybPdfName" style="color:#000; font-weight:600;"></span></div>
+                    <div style="display: inline-block; width: 48%; margin-bottom: 15px;"><strong>Date:</strong> <span id="hybPdfDate" style="color:#000; font-weight:600;"></span></div>
+                </div>
+            </div>
+            <div style="margin-top: 30px; text-align: left;">
+                <p id="hyb-greeting" style="margin-bottom: 20px;"></p>
+                <p id="hyb-size" style="margin-bottom: 20px;"></p>
+                <p id="hyb-roof" style="margin-bottom: 20px;"></p>
+                <p id="hyb-frame" style="margin-bottom: 20px;"></p>
+                <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-left: 4px solid #0F3759;">
+                    <h4 style="margin: 0 0 10px 0; color: #0F3759;">Design Notes:</h4>
+                    <p id="hyb-custom-notes" style="margin: 0;"></p>
+                </div>
+            </div>
+        </div>
+        <div class="pdf-page" id="hybridPdfImagePage" style="text-align: left; padding: 30px 50px; font-size: 15px; display: none; min-height: 1000px;">
+            <h2 style="color: #0F3759; font-size: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Site Imagery</h2>
+            <div id="pdfHybridImagesGrid" style="margin-top: 20px; width: 100%;"></div>
         </div>
     </div>
 
@@ -345,7 +398,7 @@
                 <h3 style="color: #0F3759; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Project Specifications</h3>
                 <p style="margin: 10px 0;"><strong>Build Type:</strong> <span id="intPdfBuild"></span></p>
                 <p style="margin: 10px 0;"><strong>Roof:</strong> <span id="intPdfRoof"></span></p>
-                <p style="margin: 10px 0;"><strong>Notes:</strong> <span id="intPdfNotes"></span></p>
+                <p style="margin: 10px 0;"><strong>Raw Notes:</strong> <span id="intPdfNotes"></span></p>
             </div>
         </div>
     </div>
@@ -354,7 +407,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     
-    <script src="designers.js"></script>
     <script src="app.js"></script>
 
     <script type="module">
@@ -371,6 +423,9 @@
             appId: "1:208212115382:web:db7d4276b194f89a274b17"
         });
         const auth = getAuth(app); const db = getFirestore(app);
+
+        // Dynamic Version Injection
+        document.getElementById('appVersionDisplay').innerText = "Engine Build: " + new Date(document.lastModified).toLocaleString();
 
         const authOverlay = document.getElementById('authOverlay');
         const designerApp = document.getElementById('designerApp');
@@ -428,21 +483,41 @@
             window.showToast("Survey Loaded");
         };
 
-        // --- CONTINUOUS AUTOSAVE ENGINE ---
+        // --- CONTINUOUS AUTOSAVE ENGINE (WITH SYNC RESILIENCE) ---
+        let offlineQueue = false;
         window.performCloudAutoSave = async () => {
             if (!auth.currentUser) return;
             const cName = document.getElementById('clientName').value.trim();
-            if (!cName) return; // Silent abort if no name
+            if (!cName) return; 
 
             const sId = cName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + auth.currentUser.uid.slice(-4);
             const syncStatus = document.getElementById('syncStatus');
+            
+            if (!navigator.onLine) {
+                if(syncStatus) { syncStatus.innerText = "Offline - Queued"; syncStatus.style.color = "#ff4444"; }
+                offlineQueue = true;
+                return;
+            }
+
             if(syncStatus) { syncStatus.innerText = "Autosaving..."; syncStatus.style.color = "#ffc107"; }
             
             try {
                 await setDoc(doc(db, "surveys", sId), { userId: auth.currentUser.uid, clientName: cName, data: getFormState(), updatedAt: serverTimestamp() });
                 if(syncStatus) { syncStatus.innerText = "Saved"; syncStatus.style.color = "#28a745"; }
+                offlineQueue = false;
             } catch (error) { console.error(error); if(syncStatus) syncStatus.innerText = "Error Saving"; }
         };
+
+        // Offline Network Listeners
+        window.addEventListener('online', () => { 
+            window.showToast("Signal Restored. Syncing...", true); 
+            if(offlineQueue) window.performCloudAutoSave(); 
+        });
+        window.addEventListener('offline', () => { 
+            window.showToast("Dead Zone: Working Offline", false); 
+            const syncStatus = document.getElementById('syncStatus');
+            if(syncStatus) { syncStatus.innerText = "Offline Mode"; syncStatus.style.color = "#ff4444"; }
+        });
 
         let currentDrafts = {};
         async function fetchCloudDrafts(uid) {
@@ -455,14 +530,26 @@
         }
         document.getElementById('loadCloudBtn')?.addEventListener('click', () => { const id = document.getElementById('cloudDrafts').value; if(id) loadFormState(currentDrafts[id].data); });
 
-        // --- ADMIN HUB LOGIC ---
+        // --- ADMIN HUB LOGIC WITH STATS ---
         async function fetchAdminLeads() {
             const container = document.getElementById('adminLeadsContainer');
             try {
                 const snapshot = await getDocs(collection(db, "surveys"));
                 container.innerHTML = snapshot.empty ? '<p style="color:#888;">No surveys yet.</p>' : '';
+                
+                let totalSurveys = 0;
+                let todaySurveys = 0;
+                let designersSet = new Set();
+                const todayStr = new Date().toLocaleDateString();
+
                 snapshot.forEach(doc => {
                     const data = doc.data(), inputs = data.data.inputs || {}, dDate = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleDateString() : 'N/A';
+                    
+                    // Stat Calc
+                    totalSurveys++;
+                    designersSet.add(data.userId);
+                    if (dDate === todayStr) todaySurveys++;
+
                     container.innerHTML += `
                         <div class="admin-lead-card" style="background:#2a2a2a; padding:15px; border-radius:8px; border-left:4px solid #ff9800; display:flex; justify-content:space-between; margin-bottom:10px;">
                             <div>
@@ -472,10 +559,15 @@
                             </div>
                         </div>`;
                 });
+
+                // Update Stat UI
+                document.getElementById('statTotal').innerText = totalSurveys;
+                document.getElementById('statDesigners').innerText = designersSet.size;
+                document.getElementById('statToday').innerText = todaySurveys;
+
             } catch (error) { console.error(error); }
         }
 
-        // Admin Search Filter
         document.getElementById('adminSearch')?.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.admin-lead-card').forEach(card => { card.style.display = card.innerText.toLowerCase().includes(term) ? 'flex' : 'none'; });
