@@ -17,9 +17,6 @@ window.showToast = function(msg, isSuccess = true) {
     }, 3000);
 };
 
-// Remove splash screen
-setTimeout(() => { const splash = document.getElementById('splashScreen'); if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.style.display = 'none', 600); } }, 1200);
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V2 Final).");
     let jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
@@ -268,52 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-   // --- 5. SECURE WATERMARK & PDF ENGINE (ROBUST VERSION) ---
-const getBase64Logo = (brandName) => new Promise(resolve => {
-    // List of potential paths/names - check these match your actual files!
-    const fileNames = [`${brandName}.png`, `${brandName}.jpg`, `${brandName.replace(/ /g, '')}.png`, 'logo.png'];
-    
-    const tryLoad = (index) => {
-        if(index >= fileNames.length) {
-            console.error("PDF Engine: Could not find any logo for", brandName);
-            return resolve(null);
-        }
-        
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            console.log("PDF Engine: Successfully loaded logo:", fileNames[index]);
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; 
-            canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => {
-            console.warn("PDF Engine: Failed to load", fileNames[index]);
-            tryLoad(index + 1);
-        };
-        img.src = fileNames[index];
-    };
-    tryLoad(0);
-});
-
-    async function generateMultiPagePDF(templateId, filename) {
-        if (!jsPDF) return window.showToast("PDF Engine loading...", false);
-        
-        const clientName = document.getElementById('clientName')?.value.trim();
-        const postCode = document.getElementById('postCode')?.value.trim();
-        if(!clientName || !postCode) return window.showToast("Error: Client Name & Postcode are mandatory.", false);
-
-        window.showToast("Generating Branded PDF...");
-        const template = document.getElementById(templateId);
-        if(!template) return;
-
-        const profile = window.currentUserProfile || { brand: 'CO Home Improvements' };
-        const brandStyles = { 'Yorkshire Windows': '#005a9c', 'CO Home Improvements': '#2C3E50', 'Clearview': '#27ae60', 'Orion Windows': '#d35400', 'Planet': '#8e44ad', 'Trent Valley Windows': '#c0392b', 'West Yorkshire Windows': '#16a085' };
-        const brandColor = brandStyles[profile.brand] || '#0F3759';
-
-        // --- 5. SECURE WATERMARK & PDF ENGINE (ROBUST VERSION) ---
+    // --- 5. SECURE WATERMARK & PDF ENGINE (ROBUST VERSION) ---
     const getBase64Logo = (brandName) => new Promise(resolve => {
         // Explicit mapping for your files
         const logoMap = {
@@ -413,39 +365,6 @@ const getBase64Logo = (brandName) => new Promise(resolve => {
             window.showToast("PDF Export Complete!", true);
         } catch(e) { console.error(e); window.showToast("PDF Generation Failed", false); } 
         finally { template.style.display = 'none'; }
-    }            
-            // Image stamping function
-            const stampLogo = () => {
-                if(logoBase64) {
-                    try {
-                        pdf.setGState(new pdf.GState({opacity: 0.08})); // Nice transparent faint watermark
-                        const size = 150; // Size of watermark
-                        const x = (pdf.internal.pageSize.getWidth() - size) / 2;
-                        const y = (pdfHeight - size) / 2;
-                        pdf.addImage(logoBase64, 'PNG', x, y, size, size);
-                        pdf.setGState(new pdf.GState({opacity: 1.0}));
-                    } catch(e) { console.warn("Watermark error", e); }
-                }
-            };
-
-            // Render first page
-            pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight);
-            stampLogo();
-            heightLeft -= pdfHeight;
-            
-            // Loop for subsequent pages
-            while (heightLeft > 0) { 
-                position = position - pdfHeight; 
-                pdf.addPage(); 
-                pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight); 
-                stampLogo();
-                heightLeft -= pdfHeight; 
-            }
-            
-            pdf.save(filename);
-            window.showToast("PDF Export Complete!", true);
-        } catch(e) { console.error(e); window.showToast("PDF Generation Failed", false); } 
-        finally { template.style.display = 'none'; }
     }
 
     // --- BUTTON 1: CUSTOMER FACTS SHEET ---
@@ -519,7 +438,7 @@ const getBase64Logo = (brandName) => new Promise(resolve => {
             sketchCanvas.setViewportTransform([1,0,0,1,0,0]); 
             sketchCanvas.discardActiveObject(); 
             sketchCanvas.renderAll(); 
-            document.getElementById('pdfImgFull-designersketch').src = sketchCanvas.toDataURL({ format: 'png' }); // <-- PNG FIX APPLIED HERE
+            document.getElementById('pdfImgFull-designersketch').src = sketchCanvas.toDataURL({ format: 'png' }); 
         } else {
             sketchSection.style.display = 'none';
         }
@@ -553,17 +472,17 @@ const getBase64Logo = (brandName) => new Promise(resolve => {
         if(notesEl) notesEl.innerText = document.getElementById('designerNotes')?.value || 'None';
 
         // 3. Populate Uploaded Photos Grids
-     const populateGrid = (storeKey, gridId) => {
-    const grid = document.getElementById(gridId);
-    if(grid) {
-        grid.innerHTML = (window.uploadedImagesStore[storeKey] || []).map(imgSrc => 
-            `<div style="position: relative; width: 48%; height: 220px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                <img class="dynamic-brand-logo" src="" style="position: absolute; width: 60%; opacity: 0.08; pointer-events: none; mix-blend-mode: multiply;">
-                <img src="${imgSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain; position: relative; z-index: 2;">
-            </div>`
-        ).join('');
-    }
-};
+        const populateGrid = (storeKey, gridId) => {
+            const grid = document.getElementById(gridId);
+            if(grid) {
+                grid.innerHTML = (window.uploadedImagesStore[storeKey] || []).map(imgSrc => 
+                    `<div style="position: relative; width: 48%; height: 220px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                        <img class="dynamic-brand-logo" src="" style="position: absolute; width: 60%; opacity: 0.08; pointer-events: none; mix-blend-mode: multiply;">
+                        <img src="${imgSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain; position: relative; z-index: 2;">
+                    </div>`
+                ).join('');
+            }
+        };
         populateGrid('access', 'pdfAccessPhotosGrid');
         populateGrid('misc', 'pdfMiscPhotosGrid');
 
@@ -575,7 +494,7 @@ const getBase64Logo = (brandName) => new Promise(resolve => {
                 fCanvas.setViewportTransform([1,0,0,1,0,0]); 
                 fCanvas.discardActiveObject(); 
                 fCanvas.renderAll(); 
-                imgTag.src = fCanvas.toDataURL({ format: 'png' }); // <-- PNG FIX APPLIED HERE
+                imgTag.src = fCanvas.toDataURL({ format: 'png' });
             }
         });
 
