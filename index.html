@@ -129,7 +129,7 @@
             <h2 class="card__title">Client Profile</h2>
             <div class="form-grid">
                 <div class="form-group"><label class="form-group__label">Name *</label><input type="text" id="clientName" class="form-group__input" required></div>
-                <div class="form-group"><label class="form-group__label">Phone</label><input type="tel" id="clientNum" class="form-group__input"></div>
+                <div class="form-group"><label class="form-group__label">Customer Number</label><input type="tel" id="clientNum" class="form-group__input"></div>
                 <div class="form-group"><label class="form-group__label">Postcode *</label><input type="text" id="postCode" class="form-group__input" required></div>
                 <div class="form-group"><label class="form-group__label">Consultation Date</label><input type="date" id="apptDate" class="form-group__input"></div>
                 <div class="form-group"><label class="form-group__label">Revisit Date</label><input type="date" id="revisitDate" class="form-group__input"></div>
@@ -243,14 +243,13 @@
             <h2 class="card__title">Design Ideas</h2>
             <div class="form-grid">
                 <div class="form-group"><label class="form-group__label">Build Type *</label><select id="buildType" class="form-group__input" required><option value="">Select...</option><option value="Conservatory">Conservatory</option><option value="Extension">Extension</option><option value="Porch">Porch</option><option value="Roof and Frame">Roof and Frame</option><option value="Other">Other</option></select></div>
-                <div class="form-group"><label class="form-group__label">Edwardian Roof Type:</label>
+                <div class="form-group"><label class="form-group__label">Roof Type:</label>
                     <select id="roofType" class="form-group__input">
                         <option value="">Select...</option>
                         <option value="Ultra380">Ultra380</option>
                         <option value="LivinRoof">LivinRoof</option>
                         <option value="Glass Roof">Glass Roof</option>
                         <option value="Flat Roof">Flat Roof</option>
-                        <option value="Edwardian Roof">Edwardian Roof</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
@@ -258,11 +257,20 @@
                 <div class="form-group">
                     <label class="form-group__label">Frame Colour:</label>
                     <select id="frameColour" class="form-group__input">
-                        <option value="">Select...</option><option value="White">White</option><option value="Grey Foil">Grey Foil</option><option value="Rosewood">Rosewood</option><option value="Light Oak">Light Oak</option><option value="Black Brown Foil">Black Brown Foil</option><option value="Cream Foil">Cream Foil</option><option value="Chartwell Green Foil">Chartwell Green Foil</option><option value="Agate Grey">Agate Grey</option>
+                        <option value="">Select...</option>
+                        <option value="White">White</option>
+                        <option value="Light Oak Ext / White Int">Light Oak Ext / White Int</option>
+                        <option value="Light Oak Int & Ext">Light Oak Int & Ext</option>
+                        <option value="Grey Foil">Grey Foil</option>
+                        <option value="Rosewood">Rosewood</option>
+                        <option value="Black Brown Foil">Black Brown Foil</option>
+                        <option value="Cream Foil">Cream Foil</option>
+                        <option value="Chartwell Green Foil">Chartwell Green Foil</option>
+                        <option value="Agate Grey">Agate Grey</option>
                     </select>
                 </div>
                 <div class="form-group"><label class="form-group__label">Building Regs Required?</label><select id="buildingRegs" class="form-group__input"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                <div class="form-group"><label class="form-group__label">Planning Permission Required?</label><select id="planningPerms" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="Full Planning">Full Planning</option></select></div>
+                <div class="form-group"><label class="form-group__label">Planning Permission Required?</label><select id="planningPerms" class="form-group__input"><option value="">Select...</option><option value="No">No</option><option value="Pre Approved">Pre Approved</option><option value="Full Planning">Full Planning</option></select></div>
                 
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px;">
@@ -312,17 +320,19 @@
         <article class="card" style="border: 1px solid #0dcaf0;">
             <h2 class="card__title" style="color: #0dcaf0;">Customer Pack Settings</h2>
             <div class="form-group" style="margin-top: 10px;">
-                <label style="color: #fff;"><input type="checkbox" id="includeSketchInPack" checked> Include Designer Sketch in Full Proposal Pack</label>
+                <label style="color: #fff;"><input type="checkbox" id="includeSketchInPack" checked> Include Designer Sketch</label>
             </div>
             <div class="form-group" style="margin-top: 10px;">
-                <label style="color: #fff;"><input type="checkbox" id="includeNotesInPack" checked> Include Internal Notes in Full Proposal Pack</label>
+                <label style="color: #fff;"><input type="checkbox" id="includeNotesInPack" checked> Include Designer Notes</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="color: #fff;"><input type="checkbox" id="includeFlyersInPack" checked> Include Pamphlets / Journey Guide</label>
             </div>
         </article>
 
         <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
-            <button id="generateCustomerPdfBtn" class="button button--secondary" style="width: 48%;">Facts Sheet PDF</button>
-            <button id="generateHybridPdfBtn" class="button" style="width: 48%; background: #0dcaf0; color: #000; border-color: #0dcaf0;">Customer Full Proposal</button>
-            <button id="generateInternalPdfBtn" class="button" style="width: 100%; margin-top: 10px;">Full Technical Survey PDF</button>
+            <button id="generateInternalPdfBtn" class="button button--secondary" style="width: 48%;">Designer Survey (Internal)</button>
+            <button id="generateCustomerPdfBtn" class="button" style="width: 48%; background: #0dcaf0; color: #000; border-color: #0dcaf0;">Designer Survey (Customer)</button>
         </div>
         <button id="resetFormBtn" class="button btn-danger" style="margin-top: 20px; width: 100%;">Clear Form for Next Appointment</button>
     </main>
@@ -359,86 +369,17 @@
         </article>
     </main>
 
-    <div id="pdfTemplateCustomer" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
-        <div class="pdf-page" style="text-align: left; padding: 40px 50px; font-size: 15px; line-height: 1.8; color: #333; height: 1131px; box-sizing: border-box; position: relative;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="color: #0F3759; margin-bottom: 0; font-size: 26px; letter-spacing: 1px; border-bottom: 2px solid #0F3759; padding-bottom: 10px;">PROJECT FACTS SHEET</h1>
-            </div>
-            <p id="lp-greeting" style="margin-bottom: 25px;"></p>
-            <p id="lp-size" style="margin-bottom: 25px;"></p>
-            <p id="lp-roof" style="margin-bottom: 25px;"></p>
-            <p id="lp-frame" style="margin-bottom: 25px;"></p>
-            <p id="lp-compliance" style="margin-bottom: 25px;"></p>
-            <div id="lp-custom-notes-box" style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-left: 4px solid #0F3759; display: none;">
-                <h4 style="margin: 0 0 10px 0; color: #0F3759;">Design Notes:</h4>
-                <p id="lp-custom-notes" style="margin: 0;"></p>
-            </div>
-            <p id="lp-revisit" style="margin-bottom: 40px;"></p>
-            <p style="margin-bottom: 20px;">Best regards,</p>
-            <p style="margin-bottom: 5px; font-weight: bold; font-size: 18px; color: #0F3759;" id="lp-designer-name"></p>
-            <p style="margin-bottom: 15px; font-size: 15px; color: #666;">Design Consultant</p>
-            <p style="margin-top: 5px; font-size: 14px;" id="lp-designer-contact"></p>
-        </div>
-    </div>
-
-    <div id="pdfTemplateFull" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
-        
-        <div class="pdf-page" style="text-align: left; padding: 40px 50px; font-size: 15px; line-height: 1.8; color: #333; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="color: #0F3759; margin-bottom: 0; font-size: 26px; letter-spacing: 1px; border-bottom: 2px solid #0F3759; padding-bottom: 10px;">PROJECT PROPOSAL & SPECIFICATION</h1>
-            </div>
-            <p id="full-greeting" style="margin-bottom: 25px;"></p>
-            <p id="full-size" style="margin-bottom: 25px;"></p>
-            <p id="full-roof" style="margin-bottom: 25px;"></p>
-            <p id="full-frame" style="margin-bottom: 25px;"></p>
-            <p id="full-compliance" style="margin-bottom: 25px;"></p>
-            <p id="full-revisit" style="margin-bottom: 40px;"></p>
-        </div>
-
-        <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <h2 style="color: #0F3759; border-bottom: 2px solid #0F3759; padding-bottom: 5px; margin-bottom: 20px;">TECHNICAL SPECIFICATIONS</h2>
-            
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr><td style="width: 30%; padding: 5px;"><strong>Build Type:</strong></td><td style="width: 70%;" id="fullBuildType"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Proposed Size:</strong></td><td id="fullProposedSize"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Roof Type:</strong></td><td id="fullRoofType"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Frame Colour:</strong></td><td id="fullFrameColour"></td></tr>
-            </table>
-
-            <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">SITE LOGISTICS</h4>
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr><td style="width: 50%; padding: 5px;"><strong>House Material:</strong> <span id="fullHouseMaterial"></span></td>
-                    <td style="width: 50%; padding: 5px;"><strong>DPC Depth Measure:</strong> <span id="fullDpcDepth"></span>mm</td></tr>
-                <tr><td style="padding: 5px;"><strong>Fascia Height:</strong> <span id="fullFasciaHeight"></span>mm</td>
-                    <td style="padding: 5px;"><strong>Impacted Air Bricks:</strong> <span id="fullAirBricks"></span></td></tr>
-                <tr><td colspan="2" style="padding: 5px;"><strong>Wall Obstacles:</strong> <span id="fullWallObstacles"></span></td></tr>
-            </table>
-
-            <div id="full-notes-section" style="display: none; margin-top: 20px;">
-                <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">DESIGNER NOTES</h4>
-                <div style="font-size: 14px; padding: 10px; border: 1px solid #ccc; min-height: 100px;" id="fullDesignerNotes"></div>
-            </div>
-            
-            <div id="full-sketch-section" style="display: none; margin-top: 30px;">
-                 <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">DESIGNER SKETCH</h4>
-                 <div style="border: 1px solid #ccc; height: 350px; display: flex; justify-content: center; align-items: center; background:#f8f9fa;">
-                    <img id="pdfImgFull-designersketch" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <div id="pdfTemplateInternal" style="display: none; background: #f4f7f6; color: #222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; box-sizing: border-box;">
         
         <div class="pdf-page" style="position: relative; height: 1131px; overflow: hidden;">
             <div style="background: #ffffff; padding: 35px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
                 <div>
-                    <h1 style="font-size: 38px; font-weight: 900; color: #111; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Technical<br><span class="brand-text" style="color: #FF6B00;">Blueprint.</span></h1>
+                    <h1 style="font-size: 38px; font-weight: 900; color: #111; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Designer<br><span class="brand-text" style="color: #002f54;">Survey.</span></h1>
                 </div>
                 <img class="dynamic-brand-logo" src="" style="max-width: 200px; max-height: 80px; object-fit: contain;">
             </div>
 
-            <div class="brand-bg" style="background: #0b2341; padding: 25px 50px; color: #ffffff;">
+            <div class="brand-bg" style="background: #002f54; padding: 25px 50px; color: #ffffff;">
                 <div style="display: flex; flex-wrap: wrap; gap: 20px;">
                     <div style="width: 45%;">
                         <p style="margin: 0; font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1px;">Customer Name</p>
@@ -472,21 +413,21 @@
 
         <div class="pdf-page" style="position: relative; height: 1131px; overflow: hidden; padding: 40px 50px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
-                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Project <span class="brand-text" style="color: #FF6B00;">Specifications</span></h2>
+                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Project <span class="brand-text" style="color: #002f54;">Specifications</span></h2>
                 <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
             </div>
             
             <h4 style="color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 15px 0;">Design & Architecture</h4>
             <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 35px;">
-                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #FF6B00;">
+                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #002f54;">
                     <p style="margin:0; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Build Type</p>
                     <p id="pdfBuildType" style="margin: 5px 0 0 0; font-size: 20px; font-weight: 800; color: #111;"></p>
                 </div>
-                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #FF6B00;">
+                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #002f54;">
                     <p style="margin:0; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Proposed Size</p>
                     <p id="pdfProposedSize" style="margin: 5px 0 0 0; font-size: 20px; font-weight: 800; color: #111;"></p>
                 </div>
-                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #FF6B00;">
+                <div class="brand-border-bottom" style="width: 31%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-bottom: 4px solid #002f54;">
                     <p style="margin:0; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Roof Style</p>
                     <p id="pdfRoofType" style="margin: 5px 0 0 0; font-size: 20px; font-weight: 800; color: #111;"></p>
                 </div>
@@ -534,7 +475,7 @@
 
         <div class="pdf-page" style="position: relative; height: 1131px; overflow: hidden; padding: 40px 50px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
-                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Elevations & <span class="brand-text" style="color: #FF6B00;">Annotations</span></h2>
+                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Elevations & <span class="brand-text" style="color: #002f54;">Annotations</span></h2>
                 <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
             </div>
             
@@ -564,7 +505,7 @@
 
         <div class="pdf-page" style="position: relative; height: 1131px; overflow: hidden; padding: 40px 50px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
-                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Access & <span class="brand-text" style="color: #FF6B00;">Logistics</span></h2>
+                <h2 style="font-size: 22px; margin: 0; font-weight: 800; text-transform: uppercase; color: #111;">Access & <span class="brand-text" style="color: #002f54;">Logistics</span></h2>
                 <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
             </div>
 
