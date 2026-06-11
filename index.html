@@ -408,98 +408,158 @@
         </div>
     </div>
     
-    <div id="pdfTemplateInternal" style="display: none; background: #ffffff; color: #333333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; padding: 40px; box-sizing: border-box;">
+    <div id="pdfTemplateInternal" style="display: none; background: #ffffff; color: #222222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; box-sizing: border-box;">
         
-        <div class="pdf-page" style="text-align: center; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <h1 style="color: #0F3759; font-size: 30px; margin: 0 0 10px 0; font-weight: 700;">TECHNICAL SURVEY REPORT</h1>
-            <div style="width: 80px; height: 4px; background: #0F3759; margin: 0 auto 30px auto; border-radius: 2px;"></div>
+        <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
             
-            <h3 style="text-align: left; color: #0F3759; border-bottom: 2px solid #ccc; padding-bottom: 5px;">FRONT ELEVATION REFERENCE</h3>
-            <div style="width: 100%; height: 400px; background: #f8f9fa; border: 1px solid #ddd; margin-bottom: 30px; display: flex; align-items: center; justify-content: center;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 3px solid #0F3759; padding-bottom: 20px;" class="brand-border">
+                <div>
+                    <p style="margin: 0 0 5px 0; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Premium Home Improvements</p>
+                    <h1 style="color: #0F3759; font-size: 28px; margin: 0; font-weight: 800; letter-spacing: 1px;" class="brand-text">TECHNICAL SURVEY REPORT</h1>
+                </div>
+                <img class="dynamic-brand-logo" src="" style="max-width: 180px; max-height: 60px; object-fit: contain;">
+            </div>
+
+            <div style="background: #f8f9fa; border-left: 4px solid #0F3759; padding: 20px 25px; margin-bottom: 30px; border-radius: 0 8px 8px 0;" class="brand-border-left">
+                <h3 style="margin: 0 0 15px 0; color: #0F3759; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;" class="brand-text">CLIENT DIRECTORY</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 5px 0; width: 20%; color: #666;">Client Name:</td>
+                        <td style="padding: 5px 0; width: 30%; font-weight: bold; color: #111;" class="bind-name"></td>
+                        <td style="padding: 5px 0; width: 20%; color: #666;">Survey Date:</td>
+                        <td style="padding: 5px 0; width: 30%; font-weight: bold; color: #111;" class="bind-date"></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #666;">Site Address:</td>
+                        <td style="padding: 5px 0; font-weight: bold; color: #111;" class="bind-address"></td>
+                        <td style="padding: 5px 0; color: #666;">Contact No:</td>
+                        <td style="padding: 5px 0; font-weight: bold; color: #111;" class="bind-num"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="padding-top: 15px; border-top: 1px solid #ddd; margin-top: 10px;">
+                            <span style="color: #666;">Lead Designer:</span> <span id="pdfPrintDesigner" style="font-weight: bold; color: #111; margin-left: 10px;"></span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3 style="margin: 0 0 15px 0; color: #333; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 8px;">FRONT ELEVATION REFERENCE</h3>
+            <div style="width: 100%; height: 450px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 30px;">
                 <img id="pdfImgInternal-frontelevation" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
             </div>
+        </div>
 
-            <div style="background: #f8f9fa; border-left: 5px solid #0F3759; padding: 25px; text-align: left; border-radius: 4px;">
-                <h3 style="margin: 0 0 15px 0; color: #0F3759; text-transform: uppercase;">CUSTOMER DETAILS</h3>
-                <div style="width: 100%; font-size: 14px; color: #495057;">
-                    <div style="display: inline-block; width: 48%; margin-bottom: 10px;"><strong>Customer Name:</strong> <span class="bind-name" style="color:#000;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 10px;"><strong>Contact Number:</strong> <span class="bind-num" style="color:#000;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 10px;"><strong>Site Address:</strong> <span class="bind-address" style="color:#000;"></span></div>
-                    <div style="display: inline-block; width: 48%; margin-bottom: 10px;"><strong>Date of Survey:</strong> <span class="bind-date" style="color:#000;"></span></div>
-                    <div style="display: inline-block; width: 100%; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;"><strong>Assigned Designer:</strong> <span id="pdfPrintDesigner" style="color:#000; font-weight:600;"></span></div>
-                </div>
+        <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <h2 style="color: #0F3759; font-size: 18px; margin: 0; font-weight: 700; text-transform: uppercase;" class="brand-text">SPECIFICATION DATASET</h2>
+                <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
             </div>
+            
+            <h4 style="color: #111; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">1. DESIGN IDEAS & PROJECT SCOPE</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 35px;">
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">Build Type:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;" id="pdfBuildType"></td>
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">Proposed Size:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;" id="pdfProposedSize"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; color: #666;">Roof Type:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfRoofType"></td>
+                    <td style="padding: 10px 5px; color: #666;">Frame Colour:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfFrameColour"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; color: #666;">Building Regs:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfBuildingRegs"></td>
+                    <td style="padding: 10px 5px; color: #666;">Planning Perms:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfPlanningPerms"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; color: #666;">SAP Calculations:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfSapCalcs"></td>
+                    <td style="padding: 10px 5px;"></td>
+                    <td style="padding: 10px 5px;"></td>
+                </tr>
+            </table>
+
+            <h4 style="color: #111; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">2. STRUCTURAL & LOCATION METRICS</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 35px;">
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">House Material:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;" id="pdfHouseMaterial"></td>
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">DPC Depth Measure:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;"><span id="pdfDpcDepth"></span> mm</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; color: #666;">Fascia Height:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;"><span id="pdfFasciaHeight"></span> mm</td>
+                    <td style="padding: 10px 5px; color: #666;">Impacted Air Bricks:</td>
+                    <td style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfAirBricks"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; color: #666;">Wall Obstacles:</td>
+                    <td colspan="3" style="padding: 10px 5px; font-weight: 600; color: #111;" id="pdfWallObstacles"></td>
+                </tr>
+            </table>
+
+            <h4 style="color: #111; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">3. ACCESS LOGISTICS MATRIX</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 35px;">
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">Wheelbarrow Issues:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;" id="pdfAccessDifficult"></td>
+                    <td style="padding: 10px 5px; width: 25%; color: #666;">Narrowest Access:</td>
+                    <td style="padding: 10px 5px; width: 25%; font-weight: 600; color: #111;"><span id="pdfAccessWidth"></span> mm</td>
+                </tr>
+            </table>
+
+            <h4 style="color: #111; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">DESIGNER OPERATIONAL SUMMARY</h4>
+            <div style="font-size: 14px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; min-height: 120px; background: #fafafa; color: #333; line-height: 1.6;" id="pdfDesignerNotes"></div>
         </div>
 
         <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <h2 style="color: #0F3759; border-bottom: 2px solid #0F3759; padding-bottom: 5px; margin-bottom: 20px;">INTERNAL SPECIFICATION DATASET</h2>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <h2 style="color: #0F3759; font-size: 18px; margin: 0; font-weight: 700; text-transform: uppercase;" class="brand-text">DRAWINGS & ANNOTATIONS LOG</h2>
+                <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
+            </div>
             
-            <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">1. DESIGN IDEAS & PROJECT SCOPE</h4>
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr><td style="width: 30%; padding: 5px;"><strong>Build Type:</strong></td><td style="width: 70%;" id="pdfBuildType"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Proposed Size:</strong></td><td id="pdfProposedSize"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Building Regs:</strong></td><td id="pdfBuildingRegs"></td></tr>
-                <tr><td style="padding: 5px;"><strong>SAP Calculations:</strong></td><td id="pdfSapCalcs"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Roof Type:</strong></td><td id="pdfRoofType"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Frame Colour:</strong></td><td id="pdfFrameColour"></td></tr>
-                <tr><td style="padding: 5px;"><strong>Planning Perms:</strong></td><td id="pdfPlanningPerms"></td></tr>
-            </table>
-
-            <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">2. STRUCTURAL & LOCATION METRICS</h4>
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr><td style="width: 50%; padding: 5px;"><strong>House Material:</strong> <span id="pdfHouseMaterial"></span></td>
-                    <td style="width: 50%; padding: 5px;"><strong>DPC Depth Measure:</strong> <span id="pdfDpcDepth"></span>mm</td></tr>
-                <tr><td style="padding: 5px;"><strong>Fascia Height:</strong> <span id="pdfFasciaHeight"></span>mm</td>
-                    <td style="padding: 5px;"><strong>Impacted Air Bricks:</strong> <span id="pdfAirBricks"></span></td></tr>
-                <tr><td colspan="2" style="padding: 5px;"><strong>Wall Obstacles:</strong> <span id="pdfWallObstacles"></span></td></tr>
-            </table>
-
-            <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">3. ACCESS LOGISTICS MATRIX</h4>
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr><td style="width: 50%; padding: 5px;"><strong>Wheelbarrow Issues:</strong> <span id="pdfAccessDifficult"></span></td>
-                    <td style="width: 50%; padding: 5px;"><strong>Narrowest Access Width:</strong> <span id="pdfAccessWidth"></span>mm</td></tr>
-            </table>
-
-            <h4 style="background: #e9ecef; padding: 8px; margin-bottom: 10px;">DESIGNER OPERATIONAL SUMMARY</h4>
-            <div style="font-size: 14px; padding: 10px; border: 1px solid #ccc; min-height: 100px;" id="pdfDesignerNotes"></div>
-        </div>
-
-        <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <h2 style="color: #0F3759; border-bottom: 2px solid #0F3759; padding-bottom: 5px; margin-bottom: 20px;">TECHNICAL DRAWINGS & ANNOTATIONS LOG</h2>
-            
-            <div style="display: flex; flex-wrap: wrap; gap: 2%;">
-                <div style="width: 49%; margin-bottom: 15px;">
-                    <p style="margin:0 0 5px 0; font-weight:bold; font-size: 12px; text-transform:uppercase;">Side Elevation</p>
-                    <div style="border: 1px solid #ccc; height: 200px; display: flex; justify-content: center; align-items: center; background:#f8f9fa;">
+            <div style="display: flex; flex-wrap: wrap; gap: 4%; justify-content: space-between;">
+                <div style="width: 48%; margin-bottom: 25px;">
+                    <p style="margin:0 0 8px 0; font-weight:600; font-size: 12px; text-transform:uppercase; color: #666; letter-spacing: 1px;">Side Elevation</p>
+                    <div style="border: 1px solid #e0e0e0; height: 220px; display: flex; justify-content: center; align-items: center; background:#fff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                         <img id="pdfImgInternal-sideelevation" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                     </div>
                 </div>
-                <div style="width: 49%; margin-bottom: 15px;">
-                    <p style="margin:0 0 5px 0; font-weight:bold; font-size: 12px; text-transform:uppercase;">Rear Elevation</p>
-                    <div style="border: 1px solid #ccc; height: 200px; display: flex; justify-content: center; align-items: center; background:#f8f9fa;">
+                <div style="width: 48%; margin-bottom: 25px;">
+                    <p style="margin:0 0 8px 0; font-weight:600; font-size: 12px; text-transform:uppercase; color: #666; letter-spacing: 1px;">Rear Elevation</p>
+                    <div style="border: 1px solid #e0e0e0; height: 220px; display: flex; justify-content: center; align-items: center; background:#fff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                         <img id="pdfImgInternal-rearelevation" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                     </div>
                 </div>
-                <div style="width: 49%; margin-bottom: 15px;"><div style="border: 1px solid #ccc; height: 200px; background:#f8f9fa;"></div></div>
-                <div style="width: 49%; margin-bottom: 15px;"><div style="border: 1px solid #ccc; height: 200px; background:#f8f9fa;"></div></div>
-                <div style="width: 49%; margin-bottom: 15px;"><div style="border: 1px solid #ccc; height: 200px; background:#f8f9fa;"></div></div>
-                <div style="width: 49%; margin-bottom: 15px;"><div style="border: 1px solid #ccc; height: 200px; background:#f8f9fa;"></div></div>
+                <div style="width: 48%; margin-bottom: 25px;"><div style="border: 1px dashed #ccc; height: 220px; background:#fafafa; border-radius: 6px;"></div></div>
+                <div style="width: 48%; margin-bottom: 25px;"><div style="border: 1px dashed #ccc; height: 220px; background:#fafafa; border-radius: 6px;"></div></div>
+                <div style="width: 48%; margin-bottom: 25px;"><div style="border: 1px dashed #ccc; height: 220px; background:#fafafa; border-radius: 6px;"></div></div>
+                <div style="width: 48%; margin-bottom: 25px;"><div style="border: 1px dashed #ccc; height: 220px; background:#fafafa; border-radius: 6px;"></div></div>
             </div>
         </div>
 
         <div class="pdf-page" style="text-align: left; padding: 40px 50px; height: 1131px; box-sizing: border-box; overflow: hidden; position: relative;">
-            <h2 style="color: #0F3759; border-bottom: 2px solid #0F3759; padding-bottom: 5px; margin-bottom: 20px;">ACCESS ROUTE & ADDITIONAL PHOTOS</h2>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <h2 style="color: #0F3759; font-size: 18px; margin: 0; font-weight: 700; text-transform: uppercase;" class="brand-text">ACCESS ROUTE & LOGISTICS</h2>
+                <img class="dynamic-brand-logo" src="" style="max-width: 120px; max-height: 40px; object-fit: contain;">
+            </div>
             
-            <p style="margin:0 0 5px 0; font-weight:bold; font-size: 14px; text-transform:uppercase;">Designer Base Sketch</p>
-            <div style="border: 1px solid #ccc; height: 350px; display: flex; justify-content: center; align-items: center; background:#f8f9fa; margin-bottom: 20px;">
+            <p style="margin:0 0 8px 0; font-weight:600; font-size: 13px; text-transform:uppercase; color: #111; letter-spacing: 1px;">Designer Base Sketch</p>
+            <div style="border: 1px solid #e0e0e0; height: 380px; display: flex; justify-content: center; align-items: center; background:#fff; margin-bottom: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                 <img id="pdfImgInternal-designersketch" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
             </div>
 
-            <p style="margin:0 0 5px 0; font-weight:bold; font-size: 14px; text-transform:uppercase;">Access Route Uploads</p>
-            <div id="pdfAccessPhotosGrid" style="display: flex; gap: 10px; margin-bottom: 20px; overflow: hidden; height: 200px;"></div>
+            <p style="margin:0 0 8px 0; font-weight:600; font-size: 13px; text-transform:uppercase; color: #111; letter-spacing: 1px;">Access Route Uploads</p>
+            <div id="pdfAccessPhotosGrid" style="display: flex; gap: 12px; margin-bottom: 30px; overflow: hidden; height: 180px;"></div>
 
-            <p style="margin:0 0 5px 0; font-weight:bold; font-size: 14px; text-transform:uppercase;">Misc / Extra Uploads</p>
-            <div id="pdfMiscPhotosGrid" style="display: flex; gap: 10px; overflow: hidden; height: 200px;"></div>
+            <p style="margin:0 0 8px 0; font-weight:600; font-size: 13px; text-transform:uppercase; color: #111; letter-spacing: 1px;">Misc / Extra Uploads</p>
+            <div id="pdfMiscPhotosGrid" style="display: flex; gap: 12px; overflow: hidden; height: 180px;"></div>
         </div>
     </div>
 
