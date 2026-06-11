@@ -182,12 +182,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 imgObj.onload = () => {
                     const c = document.createElement('canvas'); c.width = 800; c.height = 800 * (imgObj.height/imgObj.width);
                     c.getContext('2d').drawImage(imgObj, 0, 0, c.width, c.height);
-                    fabric.Image.fromURL(c.toDataURL('image/jpeg', 0.6), (img) => {
+                   fabric.Image.fromURL(c.toDataURL('image/jpeg', 0.6), (img) => {
                         fCanvas.clear();
-                        img.set({ scaleX: 1, scaleY: 1, originX: 'center', originY: 'center', left: fCanvas.width/2, top: fCanvas.height/2, selectable: false });
+                        // Calculate perfect fit scale ratio
+                        const scale = Math.min(fCanvas.width / img.width, fCanvas.height / img.height);
+                        img.set({ 
+                            scaleX: scale, 
+                            scaleY: scale, 
+                            originX: 'center', 
+                            originY: 'center', 
+                            left: fCanvas.width / 2, 
+                            top: fCanvas.height / 2, 
+                            selectable: false 
+                        });
                         fCanvas.add(img); fCanvas.sendToBack(img); saveCanvas();
-                    });
-                };
+                    });                };
                 imgObj.src = event.target.result;
             };
             reader.readAsDataURL(file);
