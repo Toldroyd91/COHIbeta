@@ -18,7 +18,7 @@ window.showToast = function(msg, isSuccess = true) {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V3 Paginated).");
+    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V4 Exact Fit).");
     let jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
 
     // --- PHOTO MANAGEMENT UTILS ---
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     document.querySelectorAll('.dyn-survey-select').forEach(sel => sel.addEventListener('change', updateDynamicLabel));
 
-    // --- 4. FABRIC CANVAS ENGINE (AUTOSNAP TO FILL FIX) ---
+    // --- 4. FABRIC CANVAS ENGINE (NO-CROP DYNAMIC RESIZE) ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
@@ -136,7 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
         fCanvas.isCalibrating = false; 
         fCanvas.scaleRatio = 5; 
 
-        if(savedData['canvas_' + id]) fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
+        if(savedData['canvas_' + id]) {
+            fCanvas.loadFromJSON(savedData['canvas_' + id], fCanvas.renderAll.bind(fCanvas));
+        }
 
         const saveCanvas = () => { 
             const data = JSON.parse(localStorage.getItem('surveyAppData')) || {}; 
@@ -222,28 +224,34 @@ document.addEventListener('DOMContentLoaded', function() {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (event) => {
-                const imgObj = new Image();
-                imgObj.onload = () => {
-                    const c = document.createElement('canvas'); c.width = 800; c.height = 800 * (imgObj.height/imgObj.width);
-                    c.getContext('2d').drawImage(imgObj, 0, 0, c.width, c.height);
-                    fabric.Image.fromURL(c.toDataURL('image/jpeg', 0.6), (img) => {
-                        fCanvas.clear();
-                        // AUTOSNAP TO FILL: Calculate ratio so image covers canvas entirely
-                        const scale = Math.max(fCanvas.width / img.width, fCanvas.height / img.height);
-                        img.set({ 
-                            scaleX: scale, 
-                            scaleY: scale, 
-                            originX: 'center', 
-                            originY: 'center', 
-                            left: fCanvas.width / 2, 
-                            top: fCanvas.height / 2, 
-                            selectable: false,
-                            evented: false
-                        });
-                        fCanvas.add(img); fCanvas.sendToBack(img); saveCanvas();
-                    });                
-                };
-                imgObj.src = event.target.result;
+                fabric.Image.fromURL(event.target.result, (img) => {
+                    fCanvas.clear();
+                    
+                    // --- DYNAMIC RESIZE FIX (NO CROPPING) ---
+                    // Calculate exactly how high the canvas needs to be to fit the image entirely based on screen width.
+                    const wrapper = group.querySelector('.canvas-container').parentElement;
+                    const targetWidth = Math.min(wrapper.clientWidth - 20, 800); // 20px padding buffer
+                    const ratio = img.height / img.width;
+                    const targetHeight = targetWidth * ratio;
+
+                    fCanvas.setWidth(targetWidth);
+                    fCanvas.setHeight(targetHeight);
+
+                    const scale = targetWidth / img.width;
+
+                    img.set({ 
+                        scaleX: scale, 
+                        scaleY: scale, 
+                        originX: 'left', 
+                        originY: 'top', 
+                        left: 0, 
+                        top: 0, 
+                        selectable: false,
+                        evented: false
+                    });
+                    
+                    fCanvas.add(img); fCanvas.sendToBack(img); saveCanvas();
+                });                
             };
             reader.readAsDataURL(file);
         });
@@ -359,6 +367,13 @@ document.addEventListener('DOMContentLoaded', function() {
         img.src = url;
     });
 
+    // Helper to get image dimensions for jsPDF dynamic sizing
+    const getImgDims = (src) => new Promise(resolve => {
+        const i = new Image();
+        i.onload = () => resolve({w: i.width, h: i.height});
+        i.src = src;
+    });
+
     async function generateSurvey(isCustomer) {
         if (!jsPDF) return window.showToast("PDF Engine loading...", false);
         
@@ -469,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 stampLogo();
             }
 
-            // DYNAMIC NATIVE PAGINATION FOR PHOTOS (NO CUTOFFS)
+            // DYNAMIC NATIVE PAGINATION FOR PHOTOS (NO CROPPING FIX)
             const allPhotos = [
                 ...(window.uploadedImagesStore.survey || []).map(src => ({src, type: 'Survey'})),
                 ...(window.uploadedImagesStore.access || []).map(src => ({src, type: 'Access'})),
@@ -484,14 +499,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     pdf.text("SITE IMAGERY", 15, 25);
                     
                     const chunk = allPhotos.slice(i, i + photosPerPage);
-                    chunk.forEach((item, idx) => {
-                        const col = idx % 2; const row = Math.floor(idx / 2);
-                        const x = 15 + (col * 95); const y = 35 + (row * 85);
+                    for (let idx = 0; idx < chunk.length; idx++) {
+                        const item = chunk[idx];
+                        const col = idx % 2; 
+                        const row = Math.floor(idx / 2);
+                        
+                        // Available max dimensions per slot
+                        const cellW = 85; 
+                        const cellH = 75;
+                        
+                        // Dynamically calculate aspect ratio to guarantee no cropping
+                        const dims = await getImgDims(item.src);
+                        const ratio = dims.h / dims.w;
+                        
+                        let printW = cellW;
+                        let printH = cellW * ratio;
+                        
+                        if (printH > cellH) {
+                            printH = cellH;
+                            printW = cellH / ratio;
+                        }
+                        
+                        // Center mathematically within the cell slot
+                        const x = 15 + (col * 95) + ((cellW - printW) / 2);
+                        const y = 35 + (row * 85) + ((cellH - printH) / 2);
                         
                         pdf.setFontSize(10); pdf.setFont("helvetica", "bold"); pdf.setTextColor(100, 100, 100);
-                        pdf.text(`${item.type} Upload`, x, y - 2);
-                        pdf.addImage(item.src, 'JPEG', x, y, 85, 75); // Forced bounds, acts like object-fit
-                    });
+                        pdf.text(`${item.type} Upload`, 15 + (col * 95), 35 + (row * 85) - 2);
+                        
+                        pdf.addImage(item.src, 'JPEG', x, y, printW, printH);
+                    }
                     stampLogo();
                 }
             }
