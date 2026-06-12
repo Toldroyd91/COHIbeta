@@ -18,7 +18,7 @@ window.showToast = function(msg, isSuccess = true) {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V2 Final).");
+    console.log("[Diagnostics] Blueprint Enterprise Engine Initialized (V3 Paginated).");
     let jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
 
     // --- PHOTO MANAGEMENT UTILS ---
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     document.querySelectorAll('.dyn-survey-select').forEach(sel => sel.addEventListener('change', updateDynamicLabel));
 
-    // --- 4. FABRIC CANVAS ENGINE (FIXED ZOOM & SCROLL INTERCEPTION) ---
+    // --- 4. FABRIC CANVAS ENGINE (AUTOSNAP TO FILL FIX) ---
     window.appCanvases = {};
     document.querySelectorAll('.canvas-group').forEach(group => {
         const id = group.getAttribute('data-id');
@@ -228,8 +228,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     c.getContext('2d').drawImage(imgObj, 0, 0, c.width, c.height);
                     fabric.Image.fromURL(c.toDataURL('image/jpeg', 0.6), (img) => {
                         fCanvas.clear();
-                        // Scale slightly down to ensure it perfectly fits inside boundaries
-                        const scale = Math.min(fCanvas.width / img.width, fCanvas.height / img.height) * 0.98;
+                        // AUTOSNAP TO FILL: Calculate ratio so image covers canvas entirely
+                        const scale = Math.max(fCanvas.width / img.width, fCanvas.height / img.height);
                         img.set({ 
                             scaleX: scale, 
                             scaleY: scale, 
@@ -237,8 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             originY: 'center', 
                             left: fCanvas.width / 2, 
                             top: fCanvas.height / 2, 
-                            selectable: false,   // Prevent selection ring
-                            evented: false       // Ignore touches (allows scrolling over image)
+                            selectable: false,
+                            evented: false
                         });
                         fCanvas.add(img); fCanvas.sendToBack(img); saveCanvas();
                     });                
@@ -342,14 +342,10 @@ document.addEventListener('DOMContentLoaded', function() {
             canvas.getContext('2d').drawImage(img, 0, 0);
             resolve(canvas.toDataURL('image/png'));
         };
-        img.onerror = () => {
-            console.error("PDF Engine: Failed to load logo:", fileName);
-            resolve(null);
-        };
+        img.onerror = () => { resolve(null); };
         img.src = fileName;
     });
 
-    // Helper: Convert Pamphlet Image URL to Base64 to append as dedicated JS PDF Pages
     const urlToBase64 = (url) => new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
@@ -363,95 +359,18 @@ document.addEventListener('DOMContentLoaded', function() {
         img.src = url;
     });
 
-    async function generateMultiPagePDF(templateId, filename, isCustomer) {
+    async function generateSurvey(isCustomer) {
         if (!jsPDF) return window.showToast("PDF Engine loading...", false);
         
-        const clientName = document.getElementById('clientName')?.value.trim();
+        const rawName = document.getElementById('clientName')?.value.trim();
         const postCode = document.getElementById('postCode')?.value.trim();
-        if(!clientName || !postCode) return window.showToast("Error: Client Name & Postcode are mandatory.", false);
+        if(!rawName || !postCode) return window.showToast("Error: Client Name & Postcode are mandatory.", false);
+        const surname = rawName.split(' ').pop() || 'Customer';
 
         window.showToast("Generating Branded PDF...");
-        const template = document.getElementById(templateId);
-        if(!template) return;
-
-        const profile = window.currentUserProfile || { brand: 'CO Home Improvements' };
-        const brandColor = '#002f54';
-
-        template.querySelectorAll('*').forEach(el => {
-            if (el.classList.contains('brand-text')) el.style.color = brandColor;
-            if (el.classList.contains('brand-bg')) el.style.backgroundColor = brandColor;
-            if (el.classList.contains('brand-border-bottom')) el.style.borderBottomColor = brandColor;
-            if (el.classList.contains('brand-border-left')) el.style.borderLeftColor = brandColor;
-        });
-
-        const logoBase64 = await getBase64Logo(profile.brand);
-        if(logoBase64) {
-            template.querySelectorAll('.dynamic-brand-logo').forEach(img => { img.src = logoBase64; });
-        }
-
-        template.style.display = 'block'; 
-        template.style.position = 'absolute'; 
-        template.style.width = '800px'; 
-        template.style.zIndex = '-9999';
+        const template = document.getElementById('pdfTemplateInternal');
+        const profile = window.currentUserProfile || { brand: 'CO Home Improvements', name: 'N/A' };
         
-        try {
-            const canvas = await html2canvas(template, { scale: 2, windowWidth: 800, windowHeight: template.scrollHeight });
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgHeight = (canvas.height * pdf.internal.pageSize.getWidth()) / canvas.width;
-            
-            let heightLeft = imgHeight; let position = 0; const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            const stampLogo = () => {
-                if(logoBase64) {
-                    try {
-                        pdf.setGState(new pdf.GState({opacity: 0.06})); // slightly softer
-                        const size = 250; // ENLARGED WATERMARK
-                        const x = (pdf.internal.pageSize.getWidth() - size) / 2;
-                        const y = (pdfHeight - size) / 2;
-                        pdf.addImage(logoBase64, 'PNG', x, y, size, size);
-                        pdf.setGState(new pdf.GState({opacity: 1.0}));
-                    } catch(e) { console.warn("Watermark error", e); }
-                }
-            };
-
-            pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight);
-            stampLogo();
-            heightLeft -= pdfHeight;
-            
-            while (heightLeft > 0) { 
-                position = position - pdfHeight; 
-                pdf.addPage(); 
-                pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, pdf.internal.pageSize.getWidth(), imgHeight); 
-                stampLogo();
-                heightLeft -= pdfHeight; 
-            }
-
-            // --- INJECT PERFECT A4 PAMPHLETS (CUSTOMER ONLY) ---
-            if (isCustomer) {
-                const selectedFlyers = Array.from(document.querySelectorAll('.pamphlet-cb:checked')).map(cb => cb.value);
-                for (const flyerUrl of selectedFlyers) {
-                    const flyerBase64 = await urlToBase64('pamphlet/' + flyerUrl);
-                    if (flyerBase64) {
-                        pdf.addPage();
-                        // 210x297mm is perfect A4
-                        pdf.addImage(flyerBase64, 'JPEG', 0, 0, 210, 297);
-                    }
-                }
-            }
-            
-            pdf.save(filename);
-            window.showToast("PDF Export Complete!", true);
-        } catch(e) { console.error(e); window.showToast("PDF Generation Failed", false); } 
-        finally { template.style.display = 'none'; }
-    }
-
-    // --- CONSOLIDATED PDF GENERATOR LOGIC ---
-    async function generateSurvey(isCustomer) {
-        const templateId = 'pdfTemplateInternal'; 
-        const rawName = document.getElementById('clientName')?.value.trim() || 'Valued Customer';
-        const surname = rawName.split(' ').pop() || 'Customer';
-        const profile = window.currentUserProfile || { name: 'N/A' };
-
         // 1. Text Binds
         document.querySelectorAll('.bind-name').forEach(el => el.innerText = rawName);
         document.querySelectorAll('.bind-num').forEach(el => el.innerText = document.getElementById('clientNum')?.value || 'N/A');
@@ -467,13 +386,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (inputEl && textEl) textEl.innerText = inputEl.value || 'N/A';
         });
 
-        // Frame Colours custom merge
         const extFrame = document.getElementById('frameColour')?.value || 'N/A';
         const intFrame = document.getElementById('internalFrameColour')?.value || 'N/A';
         const frameTextEl = document.getElementById('pdfFrameColour');
         if (frameTextEl) frameTextEl.innerText = `Ext: ${extFrame}\nInt: ${intFrame === 'Match External' ? extFrame : intFrame}`;
 
-        // 3. Notes Toggle Logic
+        // Notes Toggle
         const notesEl = document.getElementById('pdfDesignerNotes');
         if(notesEl) {
             if(isCustomer && !document.getElementById('includeNotesInPack')?.checked) {
@@ -488,56 +406,115 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 4. Sketch Toggle Logic
-        const sketchWrapper = document.getElementById('pdfImgInternal-designersketch')?.parentElement?.parentElement;
-        if (sketchWrapper) {
-            if (isCustomer && !document.getElementById('includeSketchInPack')?.checked) {
-                sketchWrapper.style.display = 'none';
-                if(sketchWrapper.previousElementSibling) sketchWrapper.previousElementSibling.style.display = 'none';
-            } else {
-                sketchWrapper.style.display = 'block';
-                if(sketchWrapper.previousElementSibling) sketchWrapper.previousElementSibling.style.display = 'block';
-            }
-        }
+        // Primary Build Area Logic
+        const buildAreaSelect = document.getElementById('primaryBuildArea');
+        const selectedBuildAreaId = buildAreaSelect.value;
+        const buildAreaTitle = buildAreaSelect.options[buildAreaSelect.selectedIndex].text;
+        document.getElementById('pdfFocusTitle').innerText = buildAreaTitle + " (Primary Focus)";
 
-        // 5. Populate Uploaded Photos Grids
-        const populateGrid = (storeKey, gridId) => {
-            const grid = document.getElementById(gridId);
-            if(grid) {
-                const photos = window.uploadedImagesStore[storeKey] || [];
-                if (photos.length === 0) {
-                    grid.innerHTML = `<p style="color:#999; font-style:italic; font-size:12px; margin:0;">No ${storeKey} photos attached.</p>`;
-                } else {
-                    grid.innerHTML = photos.map(imgSrc => 
-                        `<div style="position: relative; width: 48%; height: 220px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                            <img class="dynamic-brand-logo" src="" style="position: absolute; width: 60%; opacity: 0.08; pointer-events: none; mix-blend-mode: multiply;">
-                            <img src="${imgSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain; position: relative; z-index: 2;">
-                        </div>`
-                    ).join('');
-                }
-            }
-        };
-        populateGrid('survey', 'pdfSurveyPhotosGrid');
-        populateGrid('access', 'pdfAccessPhotosGrid');
-        populateGrid('misc', 'pdfMiscPhotosGrid');
-
-        // 6. Render Canvases
+        // Render Canvases to Template images
         ['frontelevation', 'sideelevation', 'rearelevation', 'designersketch'].forEach(id => {
             const fCanvas = window.appCanvases[id];
-            const imgTag = document.getElementById(`pdfImgInternal-${id}`);
-            if (fCanvas && imgTag) { 
+            if (fCanvas) { 
                 fCanvas.setViewportTransform([1,0,0,1,0,0]); 
-                fCanvas.discardActiveObject(); 
-                fCanvas.renderAll(); 
-                imgTag.src = fCanvas.toDataURL({ format: 'png' });
+                fCanvas.discardActiveObject(); fCanvas.renderAll(); 
+                const dataUrl = fCanvas.toDataURL({ format: 'png' });
+                
+                if(id === 'frontelevation') {
+                    document.getElementById('pdfHeroImg').src = dataUrl;
+                    document.getElementById('pdfThumbFront').src = dataUrl;
+                }
+                if(id === 'sideelevation') document.getElementById('pdfThumbSide').src = dataUrl;
+                if(id === 'rearelevation') document.getElementById('pdfThumbRear').src = dataUrl;
+                if(id === 'designersketch') document.getElementById('pdfSketchImg').src = dataUrl;
+                if(id === selectedBuildAreaId) document.getElementById('pdfFocusImg').src = dataUrl;
             }
         });
 
-        const fileNameType = isCustomer ? 'Customer_Survey' : 'Internal_Survey';
-        await generateMultiPagePDF(templateId, `${surname}_${fileNameType}.pdf`, isCustomer);
+        // Sketch Toggle Logic
+        const sketchTitle = document.getElementById('pdfSketchTitle');
+        const sketchWrapper = document.getElementById('pdfSketchWrapper');
+        if (sketchWrapper && sketchTitle) {
+            if (isCustomer && !document.getElementById('includeSketchInPack')?.checked) {
+                sketchWrapper.style.display = 'none'; sketchTitle.style.display = 'none';
+            } else {
+                sketchWrapper.style.display = 'flex'; sketchTitle.style.display = 'block';
+            }
+        }
+
+        const logoBase64 = await getBase64Logo(profile.brand);
+        if(logoBase64) { template.querySelectorAll('.dynamic-brand-logo').forEach(img => { img.src = logoBase64; }); }
+
+        template.style.display = 'block'; template.style.position = 'absolute'; template.style.width = '800px'; template.style.zIndex = '-9999';
+        
+        try {
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pagesToPrint = template.querySelectorAll('.pdf-page');
+
+            const stampLogo = () => {
+                if(logoBase64) {
+                    try {
+                        pdf.setGState(new pdf.GState({opacity: 0.05}));
+                        const size = 250; const x = (210 - size) / 2; const y = (297 - size) / 2;
+                        pdf.addImage(logoBase64, 'PNG', x, y, size, size);
+                        pdf.setGState(new pdf.GState({opacity: 1.0}));
+                    } catch(e) {}
+                }
+            };
+
+            for (let i = 0; i < pagesToPrint.length; i++) {
+                if (i > 0) pdf.addPage();
+                const canvas = await html2canvas(pagesToPrint[i], { scale: 2 });
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+                stampLogo();
+            }
+
+            // DYNAMIC NATIVE PAGINATION FOR PHOTOS (NO CUTOFFS)
+            const allPhotos = [
+                ...(window.uploadedImagesStore.survey || []).map(src => ({src, type: 'Survey'})),
+                ...(window.uploadedImagesStore.access || []).map(src => ({src, type: 'Access'})),
+                ...(window.uploadedImagesStore.misc || []).map(src => ({src, type: 'Misc'}))
+            ];
+
+            if (allPhotos.length > 0) {
+                const photosPerPage = 6; // 3 rows of 2
+                for (let i = 0; i < allPhotos.length; i += photosPerPage) {
+                    pdf.addPage();
+                    pdf.setFontSize(22); pdf.setFont("helvetica", "bold"); pdf.setTextColor(0, 47, 84);
+                    pdf.text("SITE IMAGERY", 15, 25);
+                    
+                    const chunk = allPhotos.slice(i, i + photosPerPage);
+                    chunk.forEach((item, idx) => {
+                        const col = idx % 2; const row = Math.floor(idx / 2);
+                        const x = 15 + (col * 95); const y = 35 + (row * 85);
+                        
+                        pdf.setFontSize(10); pdf.setFont("helvetica", "bold"); pdf.setTextColor(100, 100, 100);
+                        pdf.text(`${item.type} Upload`, x, y - 2);
+                        pdf.addImage(item.src, 'JPEG', x, y, 85, 75); // Forced bounds, acts like object-fit
+                    });
+                    stampLogo();
+                }
+            }
+
+            // PAMPHLETS
+            if (isCustomer) {
+                const selectedFlyers = Array.from(document.querySelectorAll('.pamphlet-cb:checked')).map(cb => cb.value);
+                for (const flyerUrl of selectedFlyers) {
+                    const flyerBase64 = await urlToBase64('pamphlet/' + flyerUrl);
+                    if (flyerBase64) {
+                        pdf.addPage();
+                        pdf.addImage(flyerBase64, 'JPEG', 0, 0, 210, 297);
+                    }
+                }
+            }
+            
+            const fileNameType = isCustomer ? 'Customer_Survey' : 'Internal_Survey';
+            pdf.save(`${surname}_${fileNameType}.pdf`);
+            window.showToast("PDF Export Complete!", true);
+        } catch(e) { console.error(e); window.showToast("PDF Generation Failed", false); } 
+        finally { template.style.display = 'none'; }
     }
 
-    // Bind Buttons
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', () => generateSurvey(false));
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', () => generateSurvey(true));
 });
