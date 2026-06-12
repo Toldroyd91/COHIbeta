@@ -554,4 +554,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('generateInternalPdfBtn')?.addEventListener('click', () => generateSurvey(false));
     document.getElementById('generateCustomerPdfBtn')?.addEventListener('click', () => generateSurvey(true));
+        // ADD THE NEW PORTAL LOGIC RIGHT HERE
+    document.getElementById('copyPortalLinkBtn')?.addEventListener('click', () => {
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'portal.html'; 
+        navigator.clipboard.writeText(baseUrl).then(() => {
+            window.showToast("Portal Link Copied! Send to customer.", true);
+        });
+    });
 });
