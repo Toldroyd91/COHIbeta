@@ -1,11 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// === 1. FIREBASE CONFIGURATION ===
-// NOTE: Paste your actual Firebase config over this placeholder block
+// === 1. FIREBASE CONFIGURATION (LIVE) ===
 const appConfig = {
     apiKey: "AIzaSyD-QrqKxjes9f1TgyJOffiQzSMRncf84L0",
-    projectId: "cohi-survey-engine"
+    authDomain: "cohi-survey-engine.firebaseapp.com",
+    projectId: "cohi-survey-engine",
+    storageBucket: "cohi-survey-engine.firebasestorage.app",
+    messagingSenderId: "208212115382",
+    appId: "1:208212115382:web:db7d4276b194f89a274b17"
 };
 const app = initializeApp(appConfig);
 const db = getFirestore(app);
@@ -20,13 +23,9 @@ const views = {
 };
 
 function switchView(targetView, roleLabel = "") {
-    // Hide all views
     Object.values(views).forEach(v => v.classList.add('hidden-view'));
-    
-    // Show target view
     views[targetView].classList.remove('hidden-view');
     
-    // Handle Global Nav visibility
     if (targetView === 'admin' || targetView === 'designer') {
         views.nav.classList.remove('hidden-view');
         document.getElementById('nav-role-badge').innerText = roleLabel;
@@ -61,7 +60,7 @@ document.getElementById('btn-login').addEventListener('click', async () => {
         return;
     }
 
-    // Customer Vault Lookup (Postcode + Customer Number)
+    // Customer Vault Lookup
     try {
         const q = query(collection(db, "surveys"), 
             where("data.inputs.postCode", "==", id.toUpperCase()), 
@@ -78,7 +77,7 @@ document.getElementById('btn-login').addEventListener('click', async () => {
         }
     } catch (error) {
         console.error("Login Error:", error);
-        err.innerText = "Database connection failed. Check your Firebase config.";
+        err.innerText = "Database connection failed.";
         err.classList.remove('hidden');
     }
 });
@@ -92,6 +91,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 // === 4. DASHBOARD INITIALIZERS ===
 function initAdminDashboard() {
     console.log("Loading Admin Global Data...");
+    // We will build the live RAG readouts here next!
 }
 
 function initDesignerDashboard(designerName) {
